@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <!-- iOS: viewport-fit=cover för att fylla hela skärmen inkl notch -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- iOS Web App Meta -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Timejegeren">
+    
+    <title>Timejegeren v1.6</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Grunnleggende stilar */
+        body { 
+            -webkit-tap-highlight-color: transparent; 
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: calc(env(safe-area-inset-bottom) + 80px); 
+        }
+        
+        input, button, select, textarea { 
+            -webkit-appearance: none; 
+            appearance: none; 
+            border-radius: 0; 
+        }
+        
+        .rounded, .rounded-md, .rounded-lg, .rounded-xl { border-radius: 8px !important; }
+        
+        /* Modal Overlay */
+        .modal-overlay {
+            display: none; position: fixed; z-index: 2147483647; left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.9); align-items: center; justify-content: center;
+            -webkit-overflow-scrolling: touch;
+            padding: 20px;
+        }
+        .modal-overlay.active { display: flex !important; }
+
+        #custom-modal-box {
+            background-color: #2d3748; color: white; padding: 25px;
+            border-radius: 12px; width: 100%; max-width: 400px;
+            border: 1px solid #4a5568; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        #history-modal-box {
+            background-color: #1a202c; color: white; padding: 15px;
+            border-radius: 12px; width: 100%; height: 90%; max-width: 800px;
+            border: 1px solid #4a5568; display: flex; flex-direction: column;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        .modal-btn { padding: 12px 20px; border-radius: 8px; font-weight: bold; margin-left: 10px; }
+        
+        details > summary { list-style: none; outline: none; }
+        details > summary::-webkit-details-marker { display: none; }
+        
+        button:active { transform: scale(0.97); opacity: 0.8; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans p-3">
+
+    <div class="max-w-7xl mx-auto">
+        <header class="mb-4 mt-2">
+            <h1 class="text-2xl font-bold text-white flex items-baseline gap-2">
+                Timejegeren <span class="text-sm text-gray-400 font-normal">v1.6</span>
+            </h1>
+            <p class="text-[11px] text-gray-500 mt-1 font-mono">
+                &copy; Joakim Söderström • Oppdatert: 2026-02-09
+            </p>
+            <p class="text-[10px] text-gray-600 mt-0">Status: Lokal Lagring (Fokus Fix)</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+            <!-- VENSTRE KOLONNE -->
+            <div class="lg:col-span-1 space-y-4">
+
+                <!-- Timer & Lønn -->
+                <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-lg">
+                    <h2 class="text-lg font-bold text-white border-b border-gray-600 pb-2 mb-3">
+                        Timer & Lønn (<span id="header-month-label">Måned</span>)
+                    </h2>
+                    
+                    <div class="mb-3">
+                        <label class="text-xs text-gray-400">Timelønn (NOK)</label>
+                        <input type="text" inputmode="decimal" id="hourly-rate-input" 
+                               oninput="window.updateHourlyRate(this.value)"
+                               placeholder="0" class="w-full p-3 bg-gray-700 rounded text-lg text-white mt-1 border border-gray-600 focus:border-blue-500">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="text-xs text-gray-400">Grunnpott (Startbeløp)</label>
+                        <input type="text" inputmode="decimal" id="base-amount-input" 
+                               oninput="window.updateBaseAmount(this.value)"
+                               placeholder="-50000" class="w-full p-3 bg-gray-700 rounded text-lg text-white mt-1 border border-gray-600 focus:border-blue-500">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="text-xs text-gray-400">Legg til timer (Måned)</label>
+                        <div class="flex gap-2 mt-1">
+                            <input type="text" inputmode="decimal" id="current-hours-input" 
+                                   placeholder="Antall..." class="w-full p-3 bg-gray-700 rounded text-lg text-white border border-gray-600 focus:border-blue-500">
+                            <button onclick="window.saveHours()" class="bg-blue-600 text-white font-bold px-6 rounded shadow">Lagre</button>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between bg-gray-900 p-3 rounded mb-1">
+                        <span class="text-gray-400 text-sm">Timer (<span id="month-label-hours">Måned</span>):</span>
+                        <span id="total-hours-display" class="font-bold text-lg">0.00</span>
+                    </div>
+                    
+                    <div class="flex justify-between bg-gray-900 p-3 rounded mb-2 border border-gray-700">
+                        <span class="text-blue-300 text-sm font-bold">Totalt i prosjektet:</span>
+                        <span id="project-total-hours-display" class="font-bold text-lg text-blue-300">0.00</span>
+                    </div>
+
+                    <div class="flex justify-between bg-gray-900 p-3 rounded">
+                        <span class="text-gray-400 text-sm">Lønn (Måned):</span>
+                        <span id="salary-display" class="font-bold text-lg">0,00 kr</span>
+                    </div>
+
+                    <button onclick="window.resetHours()" class="mt-4 w-full bg-gray-700 py-3 rounded text-xs text-gray-300 font-medium">Nullstill Månedens Timer</button>
+                </div>
+
+                <!-- Resultat -->
+                <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-lg">
+                    <h2 class="text-lg font-bold text-white border-b border-gray-600 pb-2 mb-3">Resultat</h2>
+                    
+                    <div class="mb-4">
+                        <div class="text-xs text-gray-500 uppercase mb-1 font-bold">Inneværende Måned</div>
+                        <div class="flex justify-between bg-gray-900 p-2 rounded mb-1">
+                            <span class="text-gray-400 text-xs">Akkord Totalt:</span>
+                            <span id="akkord-total-display" class="text-blue-400 font-bold">0,00 kr</span>
+                        </div>
+                        <div class="flex justify-between bg-gray-900 p-2 rounded mb-1 border border-gray-600">
+                            <span class="text-gray-300 text-xs font-bold" id="month-result-label">Måned - Akkordresultat:</span>
+                            <span id="akkord-resultat-display" class="text-green-400 font-bold">0,00 kr</span>
+                        </div>
+                        <div class="flex justify-between bg-gray-900 p-2 rounded">
+                            <span class="text-gray-400 text-xs">Resultat/Time:</span>
+                            <span id="hourly-performance-display" class="text-green-400 font-bold">0,00 kr/t</span>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-gray-600 pt-3">
+                        <div class="text-xs text-blue-300 uppercase mb-1 font-bold">Hele Prosjektet</div>
+                        
+                        <div class="flex justify-between bg-gray-900 p-2 rounded mb-1">
+                            <span class="text-gray-400 text-xs">Akkord Totalt (Prosjekt):</span>
+                            <span id="project-akkord-total-display" class="text-blue-300 font-bold">0,00 kr</span>
+                        </div>
+
+                        <div class="flex justify-between bg-gray-900 p-2 rounded mb-1">
+                            <span class="text-gray-400 text-xs">Grunnpott:</span>
+                            <span id="base-amount-display" class="text-white font-bold">0,00 kr</span>
+                        </div>
+                        <div class="flex justify-between bg-gray-900 p-3 rounded mb-1 border border-blue-500 bg-blue-900/20">
+                            <span class="text-gray-200 text-sm font-bold">Prosjektets Totalresultat:</span>
+                            <span id="final-project-result-display" class="text-xl font-extrabold text-green-400">0,00 kr</span>
+                        </div>
+                        <div class="flex justify-between bg-gray-900 p-2 rounded">
+                            <span class="text-gray-400 text-xs">Resultat/Time (Total):</span>
+                            <span id="project-hourly-performance-display" class="text-green-400 font-bold">0,00 kr/t</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HØYRE KOLONNE -->
+            <div class="lg:col-span-2">
+                <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-lg">
+                    <div class="flex justify-between items-center border-b border-gray-600 pb-2 mb-3">
+                        <h2 class="text-lg font-bold text-white">Akkordrader (30 stk)</h2>
+                        <span id="list-month-label" class="bg-gray-700 px-2 py-1 rounded text-xs text-gray-300">Måned</span>
+                    </div>
+
+                    <div class="grid grid-cols-12 gap-1 px-1 pb-2 text-[10px] uppercase text-gray-400 font-bold">
+                        <div class="col-span-1">#</div>
+                        <div class="col-span-3">Artikkel</div>
+                        <div class="col-span-2 text-right">Pris</div>
+                        <div class="col-span-4 text-right">Nytt Antall</div>
+                        <div class="col-span-2 text-right">Måned</div>
+                    </div>
+
+                    <div id="items-list" class="space-y-2 pb-4">
+                        <!-- Rader genereras her EN GÅNG -->
+                    </div>
+
+                    <!-- KNAPPER -->
+                    <div class="mt-4 pt-4 border-t border-gray-700 space-y-3">
+                        <button onclick="window.startNewPeriod()" class="w-full bg-orange-600 text-white font-bold py-4 rounded shadow border border-orange-500 text-lg">
+                            NY PERIODE (Start ny måned)
+                        </button>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="window.saveMonthlyReport()" class="bg-teal-700 text-white font-bold py-3 rounded shadow">Lagre Rapport</button>
+                            <button onclick="window.showHistory()" class="bg-gray-600 text-white font-bold py-3 rounded shadow border border-gray-500">Vis Historikk</button>
+                        </div>
+                        
+                        <button onclick="window.exportToExcelFile()" class="w-full bg-green-800 hover:bg-green-700 text-white font-bold py-3 rounded shadow">
+                            Lagre Excel-fil (Måned)
+                        </button>
+                        
+                        <div class="grid grid-cols-2 gap-3 mt-2">
+                            <button onclick="document.getElementById('import-file').click()" class="bg-blue-800 text-white font-semibold py-2 rounded text-sm shadow">Importer JSON</button>
+                            <button onclick="window.exportToJSON()" class="bg-purple-800 text-white font-semibold py-2 rounded text-sm shadow">Eksporter JSON</button>
+                        </div>
+                        
+                        <button onclick="window.resetAll()" class="w-full bg-red-900 text-white font-semibold py-2 rounded text-sm shadow mt-2">Nullstill Alt</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- IOS FIX: Ingen "accept" attributt för bättre kompatibilitet -->
+    <input type="file" id="import-file" style="display:none" onchange="window.importFromJSON(this)">
+
+    <!-- MODALER -->
+    <!-- Melding -->
+    <div id="custom-modal-overlay" class="modal-overlay">
+        <div id="custom-modal-box">
+            <p id="custom-modal-text" class="text-lg mb-4 whitespace-pre-wrap"></p>
+            <div id="custom-modal-buttons" class="flex justify-end gap-2 flex-wrap"></div>
+        </div>
+    </div>
+    
+    <!-- Historikk -->
+    <div id="history-modal-overlay" class="modal-overlay">
+        <div id="history-modal-box">
+            <div class="flex justify-between items-center mb-4 border-b border-gray-600 pb-2">
+                <h2 class="text-xl font-bold text-white">Historikk</h2>
+                <button onclick="window.closeHistory()" class="bg-gray-600 px-4 py-2 rounded text-white font-bold">Lukk</button>
+            </div>
+            <div id="history-modal-content" class="flex-1 overflow-y-auto pr-2 space-y-4"></div>
+        </div>
+    </div>
+
+    <script>
+        const DATA_KEY = 'tim_jagaren_v7'; 
+        const TOTAL_ROWS = 30;
+        
+        let state = {
+            currentMonthName: getMonthName(),
+            totalHours: 0, hourlyRate: 0, baseAmount: 0,
+            accumulatedSurplus: 0, accumulatedHours: 0, accumulatedAkkordTotal: 0,
+            savedEmail: "", 
+            items: [], history: []
+        };
+
+        window.onload = function() {
+            loadData();
+            if(!Array.isArray(state.items)) state.items = [];
+            state.items.forEach(item => { if(item.currentInput === undefined) item.currentInput = 0; });
+            if(state.items.length < TOTAL_ROWS) {
+                for(let i=0; i<TOTAL_ROWS; i++) {
+                    if(!state.items[i]) state.items[i] = { id: i, article: '', price: 0, totalQuantity: 0, currentInput: 0, historicalTotalSum: 0 };
+                }
+            }
+            if(!Array.isArray(state.history)) state.history = [];
+            if(state.accumulatedAkkordTotal === undefined) state.accumulatedAkkordTotal = 0;
+            if(state.savedEmail === undefined) state.savedEmail = ""; 
+            
+            // RENDER LIST ONCE
+            renderList();
+            updateCalculations();
+        };
+
+        function getMonthName() {
+            const m = ["Januari", "Februari", "Mars", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Desember"];
+            return m[new Date().getMonth()];
+        }
+
+        function loadData() {
+            try {
+                const raw = localStorage.getItem(DATA_KEY);
+                if(raw) { state = { ...state, ...JSON.parse(raw) }; }
+            } catch(e) { console.error("Load failed", e); }
+        }
+
+        function saveData() { localStorage.setItem(DATA_KEY, JSON.stringify(state)); }
+
+        function parseInputToNumber(val) {
+            if(typeof val === 'string') return parseFloat(val.replace(',', '.')) || 0;
+            return parseFloat(val) || 0;
+        }
+        
+        function toStr(val) {
+            if(val === undefined || val === null) return '';
+            if(typeof val === 'number') return val === 0 ? '' : val.toString().replace('.', ',');
+            if(val === '0') return ''; 
+            return val;
+        }
+
+        function fmtMoney(n) { return new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK' }).format(n); }
+        function fmtNum(n) { return new Intl.NumberFormat('nb-NO', { maximumFractionDigits: 2 }).format(n); }
+
+        // --- NY LOGIK: Uppdaterar bara värdena, ritar inte om listan ---
+        window.updateCalculations = function() {
+            const elRate = document.getElementById('hourly-rate-input');
+            const elBase = document.getElementById('base-amount-input');
+            
+            if(document.activeElement !== elRate) elRate.value = toStr(state.hourlyRate);
+            if(document.activeElement !== elBase) elBase.value = toStr(state.baseAmount);
+
+            const salary = state.totalHours * state.hourlyRate;
+            let akkordTotalMonth = 0;
+            
+            // Uppdatera raderna och räkna total
+            state.items.forEach((item, index) => {
+                const p = parseInputToNumber(item.price);
+                const q = parseInputToNumber(item.totalQuantity);
+                akkordTotalMonth += (p * q);
+                
+                // Uppdatera specifika fält i listan utan att rita om input
+                const rowSumEl = document.getElementById(`row-sum-${index}`);
+                const rowTotEl = document.getElementById(`row-total-${index}`);
+                
+                if (rowSumEl && rowTotEl) {
+                    const sumMonth = p * q;
+                    const sumTot = item.historicalTotalSum + sumMonth;
+                    rowSumEl.innerHTML = `Mnd: <span class="text-white">${fmtMoney(sumMonth)}</span>`;
+                    rowTotEl.innerHTML = `Tot: <span class="text-blue-300">${fmtMoney(sumTot)}</span>`;
+                }
+                
+                // Uppdatera "Total Antal" text
+                const qtyDisplay = document.getElementById(`row-qty-display-${index}`);
+                if(qtyDisplay) qtyDisplay.innerText = fmtNum(item.totalQuantity);
+            });
+            
+            const periodSurplus = akkordTotalMonth - salary;
+            const perHourMonth = state.totalHours > 0 ? periodSurplus / state.totalHours : 0;
+            
+            const finalResult = state.baseAmount + state.accumulatedSurplus + periodSurplus;
+            const totalProjectHours = state.accumulatedHours + state.totalHours;
+            const perHourTotal = totalProjectHours > 0 ? finalResult / totalProjectHours : 0;
+            
+            const projectAkkordTotal = (state.accumulatedAkkordTotal || 0) + akkordTotalMonth;
+
+            // Uppdatera Headers
+            const setTxt = (id, txt) => { const el = document.getElementById(id); if(el) el.innerText = txt; };
+            
+            setTxt('header-month-label', state.currentMonthName);
+            setTxt('month-label-hours', state.currentMonthName);
+            setTxt('month-result-label', state.currentMonthName + " - Akkordresultat:");
+            setTxt('list-month-label', state.currentMonthName);
+
+            setTxt('total-hours-display', fmtNum(state.totalHours));
+            setTxt('project-total-hours-display', fmtNum(totalProjectHours));
+            setTxt('salary-display', fmtMoney(salary));
+            
+            setTxt('akkord-total-display', fmtMoney(akkordTotalMonth));
+            setTxt('project-akkord-total-display', fmtMoney(projectAkkordTotal));
+            
+            const elRes = document.getElementById('akkord-resultat-display');
+            if(elRes) {
+                elRes.innerText = fmtMoney(periodSurplus);
+                elRes.className = periodSurplus >= 0 ? "text-green-400 font-bold" : "text-red-400 font-bold";
+            }
+
+            const elHourly = document.getElementById('hourly-performance-display');
+            if(elHourly) {
+                elHourly.innerText = fmtMoney(perHourMonth) + "/t";
+                elHourly.className = perHourMonth >= 0 ? "text-green-400 font-bold" : "text-red-400 font-bold";
+            }
+
+            setTxt('base-amount-display', fmtMoney(state.baseAmount));
+            
+            const elFinal = document.getElementById('final-project-result-display');
+            if(elFinal) {
+                elFinal.innerText = fmtMoney(finalResult);
+                elFinal.className = finalResult >= 0 ? "text-xl font-extrabold text-green-400" : "text-xl font-extrabold text-red-400";
+            }
+
+            const elProjHourly = document.getElementById('project-hourly-performance-display');
+            if(elProjHourly) {
+                elProjHourly.innerText = fmtMoney(perHourTotal) + "/t";
+                elProjHourly.className = perHourTotal >= 0 ? "text-green-400 font-bold" : "text-red-400 font-bold";
+            }
+        }
+
+        // Renderar HTML EN GÅNG
+        function renderList() {
+            const list = document.getElementById('items-list');
+            list.innerHTML = '';
+            
+            state.items.forEach((item, index) => {
+                // Skapa inputs med säkra värden
+                const articleVal = (item.article || '').replace(/"/g, '&quot;');
+                const priceVal = toStr(item.price);
+                const currentVal = toStr(item.currentInput);
+
+                const row = document.createElement('div');
+                row.className = "grid grid-cols-12 gap-1 items-center p-2 border-b border-gray-700 bg-gray-800 rounded mb-2";
+                row.innerHTML = `
+                    <div class="col-span-1 text-gray-500 text-xs font-bold">${index + 1}.</div>
+                    
+                    <div class="col-span-3">
+                        <input class="w-full p-2 bg-gray-700 text-white rounded text-xs border border-gray-600 focus:border-blue-500" 
+                               type="text" 
+                               id="item-${index}-article"
+                               value="${articleVal}" 
+                               oninput="window.updateItem(${index}, 'article', this.value)">
+                    </div>
+                    
+                    <div class="col-span-2">
+                        <input class="w-full p-2 bg-gray-700 text-white rounded text-xs text-right border border-gray-600 focus:border-blue-500" 
+                               type="text" inputmode="decimal" 
+                               id="item-${index}-price"
+                               value="${priceVal}" 
+                               oninput="window.updateItem(${index}, 'price', this.value)">
+                    </div>
+                    
+                    <div class="col-span-4 flex gap-1 items-center">
+                        <input class="w-full p-2 bg-gray-700 text-white rounded text-xs text-right border border-gray-600 focus:border-blue-500" 
+                               type="text" inputmode="decimal" 
+                               id="item-${index}-currentInput"
+                               value="${currentVal}" 
+                               oninput="window.updateItem(${index}, 'currentInput', this.value)">
+                        
+                        <button onclick="window.subtractQuantity(${index})" class="bg-red-600 text-white w-8 h-8 rounded-md text-lg font-bold flex-shrink-0 flex items-center justify-center shadow active:scale-95 mr-4">-</button> 
+                        <button onclick="window.addQuantity(${index})" class="bg-green-600 text-white w-8 h-8 rounded-md text-lg font-bold flex-shrink-0 flex items-center justify-center shadow active:scale-95">+</button>
+                    </div>
+                    
+                    <div class="col-span-2 text-right text-xs text-gray-300 font-bold" id="row-qty-display-${index}">
+                        ${fmtNum(item.totalQuantity)}
+                    </div>
+                    
+                    <div class="col-span-12 flex justify-between pt-1 text-[10px] font-mono border-t border-gray-700 mt-1">
+                        <span class="text-gray-400" id="row-total-${index}">Loading...</span>
+                        <span class="text-gray-400" id="row-sum-${index}">Loading...</span>
+                    </div>
+                `;
+                list.appendChild(row);
+            });
+        }
+
+        window.updateHourlyRate = (val) => { state.hourlyRate = parseInputToNumber(val); saveData(); updateCalculations(); };
+        window.updateBaseAmount = (val) => { state.baseAmount = parseInputToNumber(val); saveData(); updateCalculations(); };
+        
+        window.updateItem = (id, field, val) => {
+            const item = state.items[id];
+            if(field === 'price' || field === 'currentInput') {
+                item[field] = val; 
+            } else {
+                item[field] = val;
+            }
+            saveData(); 
+            // Inga fler renderList(), bara kalkylering
+            updateCalculations();
+        };
+
+        window.saveHours = () => {
+            const el = document.getElementById('current-hours-input');
+            const val = parseInputToNumber(el.value);
+            if(val > 0) {
+                state.totalHours += val;
+                el.value = '';
+                saveData(); updateCalculations();
+            }
+        };
+
+        window.addQuantity = (id) => {
+            const item = state.items[id];
+            const val = parseInputToNumber(item.currentInput);
+            if(val !== 0) {
+                item.totalQuantity = parseInputToNumber(item.totalQuantity) + val;
+                item.currentInput = 0;
+                
+                // Manuell uppdatering av input-fältet
+                document.getElementById(`item-${id}-currentInput`).value = '';
+                
+                saveData(); updateCalculations();
+            }
+        };
+
+        window.subtractQuantity = (id) => {
+            const item = state.items[id];
+            const val = parseInputToNumber(item.currentInput);
+            if(val !== 0) {
+                item.totalQuantity = parseInputToNumber(item.totalQuantity) - val;
+                item.currentInput = 0;
+                
+                // Manuell uppdatering av input-fältet
+                document.getElementById(`item-${id}-currentInput`).value = '';
+                
+                saveData(); updateCalculations();
+            }
+        };
+
+        window.resetHours = () => {
+            window.showConfirmation("Nullstill månedens timer?", () => { state.totalHours = 0; saveData(); updateCalculations(); });
+        };
+
+        window.resetAll = () => {
+            window.showConfirmation("ADVARSEL: Nullstill HELE prosjektet? Alt slettes.", () => {
+                localStorage.removeItem(DATA_KEY); location.reload();
+            });
+        };
+
+        window.startNewPeriod = () => {
+            window.showConfirmation(`Start ny periode (${getMonthName()})?\n\nDette låser månedens resultat og nullstiller antallene.`, () => {
+                const salary = state.totalHours * state.hourlyRate;
+                let akkordTotal = 0;
+                state.items.forEach(i => akkordTotal += (parseInputToNumber(i.price) * parseInputToNumber(i.totalQuantity)));
+                const surplus = akkordTotal - salary;
+
+                state.history.unshift({
+                    date: new Date().toISOString(),
+                    month: state.currentMonthName,
+                    surplus: surplus,
+                    totalResult: state.baseAmount + state.accumulatedSurplus + surplus,
+                    items: JSON.parse(JSON.stringify(state.items))
+                });
+
+                state.accumulatedSurplus += surplus;
+                state.accumulatedHours += state.totalHours;
+                state.accumulatedAkkordTotal = (state.accumulatedAkkordTotal || 0) + akkordTotal;
+
+                state.items.forEach((i, idx) => {
+                    i.historicalTotalSum += (parseInputToNumber(i.price) * parseInputToNumber(i.totalQuantity));
+                    i.totalQuantity = 0;
+                    i.currentInput = 0;
+                    // Nollställ inputs visuellt
+                    const inp = document.getElementById(`item-${idx}-currentInput`);
+                    if(inp) inp.value = '';
+                });
+
+                state.totalHours = 0;
+                state.currentMonthName = getMonthName();
+                saveData(); updateCalculations();
+                window.showModal("Ny periode startet!");
+            });
+        };
+        
+        window.saveMonthlyReport = () => {
+            window.showConfirmation("Lagre et øyeblikksbilde i historikken?", () => {
+               const salary = state.totalHours * state.hourlyRate;
+               let akkordTotal = 0;
+               state.items.forEach(i => akkordTotal += (parseInputToNumber(i.price) * parseInputToNumber(i.totalQuantity)));
+               const surplus = akkordTotal - salary;
+               
+               state.history.unshift({
+                    date: new Date().toISOString(),
+                    month: state.currentMonthName + " (Snapshot)",
+                    surplus: surplus,
+                    totalResult: state.baseAmount + state.accumulatedSurplus + surplus,
+                    items: JSON.parse(JSON.stringify(state.items))
+               });
+               saveData();
+               window.showModal("Rapport lagret!");
+            });
+        };
+        
+        window.exportToJSON = () => {
+            const blob = new Blob([JSON.stringify(state)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'timejegeren.json'; a.click();
+        };
+
+        window.importFromJSON = (input) => {
+            const file = input.files[0];
+            if(!file) return;
+            const r = new FileReader();
+            r.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    state = data; saveData(); 
+                    renderList(); // Rita om listan vid import
+                    updateCalculations();
+                    window.showModal("Data importert!");
+                } catch(x) { window.showModal("Feil på filen."); }
+            };
+            r.readAsText(file);
+        };
+
+        window.exportToExcelFile = () => {
+            try {
+                const salary = state.totalHours * state.hourlyRate;
+                let akkordTotalMonth = 0;
+                state.items.forEach(i => { akkordTotalMonth += (parseInputToNumber(i.price) * parseInputToNumber(i.totalQuantity)); });
+                const periodSurplus = akkordTotalMonth - salary;
+
+                const now = new Date();
+                const dateStr = now.toISOString().split('T')[0];
+                const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-').slice(0, 5);
+                const cleanMonth = state.currentMonthName.replace(/[^a-z0-9]/gi, '_');
+                const filename = `rapport_${cleanMonth}_${dateStr}_${timeStr}.csv`;
+
+                let csv = `\ufeffRAPPORT TIMEJEGEREN\n`;
+                csv += `Periode;${state.currentMonthName}\n`;
+                csv += `Dato;${dateStr} ${timeStr.replace('-', ':')}\n\n`;
+                
+                csv += `ØKONOMI (Periode)\n`;
+                csv += `Månedsresultat;${fmtMoney(periodSurplus)}\n\n`; 
+                
+                csv += `ARTIKLER (Periode)\n`;
+                csv += `Artikkel;Antall;Pris;Sum\n`;
+
+                state.items.forEach(item => {
+                     const p = parseInputToNumber(item.price);
+                     const q = parseInputToNumber(item.totalQuantity);
+                     
+                     if (q !== 0 || item.article.trim() !== "") {
+                         const sum = p * q;
+                         const art = (item.article || '').replace(/;/g, ','); 
+                         csv += `${art};${fmtNum(q)};${fmtMoney(p)};${fmtMoney(sum)}\n`;
+                     }
+                });
+
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+            } catch (e) {
+                window.showModal("Feil ved eksport: " + e.message);
+            }
+        };
+
+        window.showHistory = () => {
+            const overlay = document.getElementById('history-modal-overlay');
+            const content = document.getElementById('history-modal-content');
+            
+            if(!state.history || state.history.length === 0) {
+                content.innerHTML = '<p class="text-gray-400 text-center mt-4">Ingen historikk lagret ennå.</p>';
+            } else {
+                content.innerHTML = state.history.map((h, index) => {
+                    const itemsHtml = (h.items && Array.isArray(h.items)) ? h.items.map(item => {
+                        const p = parseInputToNumber(item.price);
+                        const q = parseInputToNumber(item.totalQuantity);
+                        const sum = p * q;
+                        if(q === 0 && !item.article) return '';
+                        return `
+                            <div class="grid grid-cols-12 gap-1 text-xs border-t border-gray-600 py-1">
+                                <div class="col-span-6 break-words">${item.article}</div>
+                                <div class="col-span-2 text-right">${fmtNum(q)}</div>
+                                <div class="col-span-4 text-right">${fmtMoney(sum)}</div>
+                            </div>
+                        `;
+                    }).join('') : '<div class="text-xs text-gray-500">Ingen artikler lagret.</div>';
+
+                    return `
+                    <div class="bg-gray-700 p-3 rounded border border-gray-600 mb-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <div class="font-bold text-blue-300">
+                                <span>${h.month || h.periodName || 'Ukjent månad'}</span>
+                                <div class="text-xs text-gray-400 font-normal">${h.date ? h.date.split('T')[0] : ''}</div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="window.shareHistoryAsCSV(${index})" class="bg-indigo-600 active:bg-indigo-700 text-white text-xs font-bold px-3 py-2 rounded shadow flex items-center">
+                                    <span class="mr-1">📤</span> CSV / Excel
+                                </button>
+                                <button onclick="window.deleteHistoryEntry(${index})" class="bg-red-600 active:bg-red-700 text-white text-xs font-bold px-3 py-2 rounded shadow">🗑️</button>
+                            </div>
+                        </div>
+                        <div class="text-sm grid grid-cols-2 gap-2 mb-3">
+                            <div>Periodres: <span class="${h.surplus >= 0 ? 'text-green-400' : 'text-red-400'}">${fmtMoney(h.surplus)}</span></div>
+                            <div>Totalres: <span class="${(h.totalResult || 0) >= 0 ? 'text-green-400' : 'text-red-400'}">${fmtMoney(h.totalResult || 0)}</span></div>
+                        </div>
+                        
+                        <details>
+                            <summary class="text-xs text-gray-400 cursor-pointer p-2 bg-gray-800 rounded hover:bg-gray-600 select-none">Vis artikler ▼</summary>
+                            <div class="mt-2 bg-gray-800 p-2 rounded max-h-48 overflow-y-auto">
+                                ${itemsHtml}
+                            </div>
+                        </details>
+                    </div>
+                `}).join('');
+            }
+            overlay.classList.add('active');
+        };
+        
+        window.closeHistory = () => {
+            document.getElementById('history-modal-overlay').classList.remove('active');
+        };
+        
+        window.shareHistoryAsCSV = async (index) => {
+            try {
+                const h = state.history[index];
+                if(!h) return;
+
+                let csv = `\ufeffRAPPORT TIMEJEGEREN\n`;
+                csv += `Periode;${h.month || 'Okänd'}\n`;
+                csv += `Dato;${h.date ? h.date.split('T')[0] : ''}\n\n`;
+                csv += `ØKONOMI\n`;
+                csv += `Perioderesultat;${fmtMoney(h.surplus)}\n`;
+                csv += `ARTIKLER\n`;
+                csv += `Artikkel;Antall;Pris;Sum\n`;
+
+                if (h.items && Array.isArray(h.items)) {
+                    h.items.forEach(item => {
+                         const p = parseInputToNumber(item.price);
+                         const q = parseInputToNumber(item.totalQuantity);
+                         if (q !== 0 || item.article) {
+                             const sum = p * q;
+                             const art = (item.article || '').replace(/;/g, ','); 
+                             csv += `${art};${fmtNum(q)};${fmtMoney(p)};${fmtMoney(sum)}\n`;
+                         }
+                    });
+                }
+
+                const cleanMonth = (h.month || 'rapport').replace(/[^a-z0-9]/gi, '_');
+                const dateObj = h.date ? new Date(h.date) : new Date();
+                const dateStr = dateObj.toISOString().split('T')[0];
+                const timeStr = dateObj.toTimeString().split(' ')[0].replace(/:/g, '-').slice(0, 5);
+                
+                const filename = `rapport_${cleanMonth}_${dateStr}_${timeStr}.csv`;
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                
+                let shared = false;
+                if (navigator.canShare && navigator.share) {
+                     try {
+                        const file = new File([blob], filename, { type: 'text/csv' });
+                        if (navigator.canShare({ files: [file] })) {
+                            await navigator.share({
+                                files: [file],
+                                title: 'Rapport Timejegeren',
+                                text: `Her er rapporten for ${h.month}`
+                            });
+                            shared = true;
+                        }
+                    } catch (err) {
+                        console.warn("Share API failed", err);
+                    }
+                }
+                
+                if (!shared) {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    window.showModal(`Filen '${filename}' ble lastet ned.`);
+                }
+            } catch (e) {
+                window.showModal("En feil oppstod: " + e.message);
+            }
+        };
+
+        window.deleteHistoryEntry = (index) => {
+            window.showConfirmation("Slett denne rapporten permanent?", () => {
+                state.history.splice(index, 1);
+                saveData();
+                window.showHistory();
+            });
+        };
+
+        // --- MODALER ---
+        window.showModal = (msg) => {
+            const overlay = document.getElementById('custom-modal-overlay');
+            const text = document.getElementById('custom-modal-text');
+            const buttons = document.getElementById('custom-modal-buttons');
+            text.innerText = msg;
+            buttons.innerHTML = `<button onclick="document.getElementById('custom-modal-overlay').classList.remove('active')" class="modal-button modal-button-cancel">OK</button>`;
+            overlay.classList.add('active');
+        };
+
+        window.showConfirmation = (msg, cb) => {
+            const overlay = document.getElementById('custom-modal-overlay');
+            const text = document.getElementById('custom-modal-text');
+            const buttons = document.getElementById('custom-modal-buttons');
+            text.innerText = msg;
+            
+            const btnYes = document.createElement('button');
+            btnYes.className = 'modal-button modal-button-confirm';
+            btnYes.innerText = 'Ja';
+            btnYes.onclick = () => { overlay.classList.remove('active'); cb(); };
+            
+            const btnNo = document.createElement('button');
+            btnNo.className = 'modal-button modal-button-cancel';
+            btnNo.innerText = 'Avbryt';
+            btnNo.onclick = () => overlay.classList.remove('active');
+            
+            buttons.innerHTML = '';
+            buttons.appendChild(btnNo);
+            buttons.appendChild(btnYes);
+            overlay.classList.add('active');
+        };
+
+    </script>
+</body>
+</html>
