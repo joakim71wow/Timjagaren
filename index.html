@@ -1,933 +1,484 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="no">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Timejegeren 6.4</title>
-    
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    
+    <title>Timjagaren Brukaren</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { 
-            -webkit-tap-highlight-color: transparent; 
-            padding-top: env(safe-area-inset-top);
-            padding-bottom: calc(env(safe-area-inset-bottom) + 120px); 
-            background-color: #0f172a; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
-        /* iOS Fix: Forhindre auto-zoom ved å ha minst 16px font på inputs */
-        input, button, select, textarea { 
-            -webkit-appearance: none; 
-            appearance: none; 
-            border-radius: 12px; 
-            font-size: 16px !important; 
-        }
-        
-        .modal-overlay {
-            display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.9); align-items: center; justify-content: center;
-            padding: 20px;
-            backdrop-filter: blur(8px);
-        }
+        body { -webkit-tap-highlight-color: transparent; padding-top: env(safe-area-inset-top); padding-bottom: calc(env(safe-area-inset-bottom) + 120px); background-color: #0f172a; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow-x: hidden; }
+        input, button, select { -webkit-appearance: none; appearance: none; border-radius: 12px; font-size: 16px !important; }
+        .modal-overlay { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.9); align-items: center; justify-content: center; padding: 15px; backdrop-filter: blur(8px); }
         .modal-overlay.active { display: flex !important; }
-
-        .custom-select {
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23fbbf24' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-            background-position: right 0.75rem center;
-            background-repeat: no-repeat;
-            background-size: 1.5em 1.5em;
-            padding-right: 2.5rem;
-        }
-
-        .sweden-yellow { color: #fecb00; }
         .sweden-bg { background-color: #005293; }
-        
-        .card { background-color: #1e293b; border: 1px solid #334155; border-radius: 1.5rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5); }
-        
-        .import-label {
-            display: flex; align-items: center; justify-content: center;
-            background-color: #334155; color: #f8fafc; font-weight: 900;
-            padding: 1rem; border-radius: 1rem; border: 2px dashed #475569;
-            text-transform: uppercase; font-size: 11px; letter-spacing: 0.1em;
-            cursor: pointer; width: 100%;
-        }
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .sweden-yellow { color: #fecb00; }
+        .card { background-color: #1e293b; border: 1px solid #334155; border-radius: 1.5rem; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-        
-        details summary { list-style: none; outline: none; }
-        details summary::-webkit-details-marker { display: none; }
+        @keyframes pulse-sync { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        .sync-active { animation: pulse-sync 1.5s infinite; }
+        details summary::-webkit-details-marker { display:none; }
     </style>
 </head>
 <body class="text-gray-100 p-4">
 
+
     <div class="max-w-md mx-auto space-y-6">
         
-        <!-- HEADER -->
         <header class="flex justify-between items-center border-b border-gray-800 pb-4">
-            <div>
-                <h1 class="text-3xl font-black text-white tracking-tighter uppercase">
-                    TIMEJEGEREN <span class="text-sm sweden-yellow font-bold italic tracking-normal">v6.4</span>
-                </h1>
-                <p class="text-[10px] text-gray-500 uppercase tracking-widest font-black">&copy; Joakim Söderström</p>
+            <div class="flex items-center gap-3">
+                <div class="w-14 h-14 rounded-2xl overflow-hidden shadow-2xl border border-slate-700 bg-red-600 flex items-center justify-center">
+                    <svg viewBox="0 0 100 100" class="w-full h-full"><rect width="100" height="100" fill="#ff0000"/><path d="M50 15 L54 5 L64 5 L60 15 A35 35 0 0 1 75 25 L85 20 L95 30 L85 40 A35 35 0 0 1 85 60 L95 70 L85 80 L75 75 A35 35 0 0 1 60 85 L64 95 L54 95 L50 85 A35 35 0 0 1 40 85 L36 95 L26 95 L30 85 A35 35 0 0 1 15 75 L5 80 L0 70 L10 60 A35 35 0 0 1 10 40 L0 30 L5 20 L15 25 A35 35 0 0 1 30 15 L26 5 L35 5 L40 15 A35 35 0 0 1 50 15 Z" fill="#c0c0c0" stroke="#808080" stroke-width="1"/><circle cx="50" cy="50" r="30" fill="#c0c0c0" stroke="#808080" stroke-width="2"/><text x="50" y="62" font-family="serif" font-weight="bold" font-size="30" fill="#d4af37" text-anchor="middle">TJ</text></svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-black text-white tracking-tighter uppercase leading-none">TIMJAGAREN <span class="text-[10px] sweden-yellow font-bold italic tracking-normal ml-0.5">💀 Brukaren 💀</span></h1>
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest font-black mt-1">&copy; Joakim Söderström</p>
+                </div>
             </div>
-            <button onclick="window.showSettings()" class="bg-slate-800 p-3 rounded-2xl shadow-lg border border-slate-700">⚙️</button>
+            <div class="flex gap-2">
+                <button onclick="window.showSettings()" class="bg-slate-800 p-3 rounded-2xl shadow-lg border border-slate-700 active:scale-90 transition-transform shadow-lg">⚙️</button>
+            </div>
         </header>
 
-        <!-- TIDSLOGGING -->
-        <div class="card p-5">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest">Arbeidstid</h2>
-                <span id="period-label" class="text-[10px] bg-blue-900/50 text-blue-300 px-3 py-1 rounded-full border border-blue-800 uppercase font-black tracking-tighter">Måned</span>
+
+        <!-- STATUS -->
+        <div class="card p-4 border-l-4 border-orange-600 min-h-[75px] flex items-center justify-between shadow-xl">
+            <div id="name-input-container" class="w-full">
+                <label class="text-[9px] text-gray-500 uppercase font-black mb-1 block tracking-widest italic">Angi Montør</label>
+                <input type="text" id="worker-name-input" onchange="window.saveWorkerName()" placeholder="Navn..." class="w-full bg-slate-900 text-white p-3 border border-slate-700 font-bold outline-none focus:border-orange-600 transition-colors">
             </div>
-            <div class="flex gap-3">
-                <input type="text" inputmode="decimal" id="hours-input" placeholder="0" 
-                       class="w-24 p-4 bg-slate-900 text-white text-2xl border border-slate-700 focus:border-yellow-500 text-center font-black shadow-inner">
-                
-                <button onclick="window.subtractHours()" class="w-16 bg-red-900/20 text-red-500 border border-red-900/50 font-black rounded-2xl shadow active:scale-95 text-2xl">-</button>
-                <button onclick="window.addHours()" class="flex-1 sweden-bg text-white font-black rounded-2xl shadow-xl active:scale-95 text-2xl">+</button>
+            <div id="name-display-container" class="hidden w-full">
+                <label class="text-[9px] text-gray-500 uppercase font-black mb-0.5 block tracking-widest opacity-40 italic">Aktiv Montør</label>
+                <div class="text-3xl font-black text-orange-600 uppercase italic tracking-tighter leading-none" id="locked-worker-name"></div>
             </div>
-            <div class="flex justify-between mt-5 text-[11px] font-black text-gray-500 uppercase tracking-tighter">
-                <span>Timer i perioden: <strong id="disp-curr-hours" class="text-white text-sm">0</strong></span>
-                <span>Lønn: <strong id="disp-curr-salary" class="sweden-yellow text-sm">0 kr</strong></span>
-            </div>
+            <div id="cloud-status-icon" class="text-2xl opacity-20 ml-2">☁️</div>
         </div>
 
-        <!-- ARTIKELLOGGING -->
-        <div class="card p-5 relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-2 h-full bg-yellow-500"></div>
-            <h2 class="text-xs font-black text-white mb-5 pl-2 uppercase tracking-widest">Registrer montasje</h2>
-            
-            <div class="space-y-4">
-                <div>
-                    <label class="text-[10px] text-gray-500 uppercase font-black mb-1 block ml-1">Velg artikkel</label>
-                    <select id="article-select" onchange="window.onArticleSelect()" 
-                            class="custom-select w-full p-4 bg-slate-900 text-white text-lg border border-slate-700 focus:border-yellow-500 appearance-none font-bold shadow-inner">
-                        <option value="">-- Velg artikkel --</option>
-                    </select>
-                </div>
 
-                <div class="flex gap-4 items-end">
-                    <div class="flex-1">
-                        <label class="text-[10px] text-gray-500 uppercase font-black mb-1 block ml-1 tracking-widest">Mengde</label>
-                        <input type="text" inputmode="decimal" id="article-qty" placeholder="0" 
-                               class="w-full p-4 bg-slate-900 text-white text-2xl border border-slate-700 focus:border-yellow-500 text-center font-black shadow-inner">
+        <!-- ARBEIDSTID -->
+        <div class="card p-5 shadow-lg">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest italic">Arbeidstid</h2>
+                <div class="flex gap-2">
+                    <div class="bg-blue-900/40 border border-blue-800 px-2 py-1 rounded-lg text-center min-w-[75px]">
+                        <p class="text-[7px] text-blue-400 uppercase font-bold mb-0.5 tracking-tighter">Uke</p>
+                        <p class="text-xs font-black text-white leading-none"><span id="disp-week-hours">0</span> <small class="text-[8px] opacity-50">h</small></p>
                     </div>
-                    <div class="w-1/3">
-                        <label class="text-[10px] text-gray-500 uppercase font-black mb-1 block ml-1 tracking-tighter">Enhetspris</label>
-                        <div id="disp-price" class="w-full p-4 bg-slate-800 text-gray-400 text-sm text-center border border-slate-700 font-mono font-bold italic">
-                            -
-                        </div>
-                    </div>
-                </div>
-
-                <button onclick="window.addEntry()" class="w-full bg-green-600 hover:bg-green-500 text-white font-black py-5 rounded-2xl shadow-xl active:scale-95 flex justify-center items-center gap-3 transition-all">
-                    <span class="text-3xl font-normal">+</span> 
-                    <span class="text-lg uppercase">Legg til</span>
-                </button>
-                
-                <div class="text-center">
-                    <button onclick="window.showArticleManager()" class="text-[10px] text-blue-400 font-black uppercase tracking-widest p-2 opacity-60">
-                        Rediger bibliotek
+                    <button onclick="window.openMonthPicker()" class="bg-slate-800 border border-slate-700 px-2 py-1 rounded-lg text-center min-w-[75px] active:bg-slate-700 transition-colors">
+                        <p class="text-[7px] text-orange-400 uppercase font-bold mb-0.5 tracking-tighter italic">Periode ▾</p>
+                        <p class="text-xs font-black text-white leading-none"><span id="period-label">Måned</span> <small class="text-[8px] opacity-50"><span id="disp-period-hours">0</span>h</small></p>
                     </button>
                 </div>
             </div>
+            <div class="flex gap-3">
+                <input type="text" id="hours-input" inputmode="decimal" placeholder="0" class="w-24 p-4 bg-slate-900 text-white text-2xl border border-slate-700 focus:border-yellow-500 text-center font-black shadow-inner rounded-2xl">
+                <button onclick="window.subtractHours()" class="w-16 bg-red-900/20 text-red-500 border border-red-900/50 font-black rounded-2xl shadow active:scale-95 text-2xl">-</button>
+                <button onclick="window.addHours()" class="flex-1 sweden-bg text-white font-black rounded-2xl shadow-xl active:scale-95 text-2xl">+</button>
+            </div>
+            <div class="flex justify-between items-center mt-4">
+                <button onclick="window.showHourLog()" class="text-[9px] text-blue-400 font-bold uppercase tracking-widest bg-blue-900/20 px-3 py-1 rounded-lg border border-blue-900/30 active:scale-95">Vis timelogg</button>
+                <div class="text-right"><span class="text-[10px] text-gray-500 uppercase font-black mr-2">Lønn periode:</span><strong id="disp-curr-salary" class="sweden-yellow text-sm font-black">0 kr</strong></div>
+            </div>
         </div>
 
-        <!-- TOTAL PROSJEKTSTATISTIKK -->
-        <div class="card p-6">
+
+        <!-- REGISTRERING & SYNK -->
+        <div class="card p-5 relative overflow-hidden shadow-lg border-t-4 border-blue-600">
+            <h2 class="text-xs font-black text-white mb-5 uppercase tracking-widest italic">Registrering</h2>
+            <div class="space-y-4">
+                <select id="article-select" onchange="window.onArticleSelect()" class="custom-select w-full p-4 bg-slate-900 text-white text-lg border border-slate-700 focus:border-yellow-500 appearance-none font-bold shadow-inner"><option value="">-- Biblioteket lastes... --</option></select>
+                <div class="flex gap-4 items-end">
+                    <div class="flex-1">
+                        <label class="text-[10px] text-gray-500 uppercase font-black mb-1 block ml-1 tracking-widest">Antall materialer</label>
+                        <input type="text" id="article-qty" inputmode="decimal" placeholder="0" class="w-full p-4 bg-slate-900 text-white text-2xl border border-slate-700 focus:border-yellow-500 text-center font-black shadow-inner">
+                    </div>
+                    <div class="w-1/3 text-right">
+                        <label class="text-[10px] text-gray-500 uppercase font-black mb-1 block pr-1 opacity-60">Pris/enhet</label>
+                        <div id="disp-price" class="w-full p-4 bg-slate-800 text-gray-400 text-sm text-center border border-slate-700 font-mono font-bold italic rounded-xl">-</div>
+                    </div>
+                </div>
+                <div class="flex flex-col gap-2 pt-2">
+                    <button id="main-sync-btn" onclick="window.addAndSyncNow()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-8 rounded-2xl shadow-xl active:scale-95 flex flex-col justify-center items-center gap-1 transition-all border border-blue-400/30">
+                        <span class="text-lg uppercase tracking-widest">Registrer Materiale</span>
+                    </button>
+                    <button id="full-sync-btn" onclick="window.syncFullPeriodToCloud()" class="w-full bg-slate-800 text-blue-300 font-bold py-3 rounded-2xl border border-slate-700 text-[9px] uppercase tracking-widest active:scale-95 transition-all">Send ALT i valgt periode (Backup)</button>
+                </div>
+                <div class="text-center"><button onclick="window.showArticleManager()" class="text-[10px] text-blue-400 font-black uppercase tracking-widest p-2 opacity-60 hover:opacity-100 transition-opacity">Administrer Bibliotek</button></div>
+            </div>
+        </div>
+
+
+        <!-- STATISTIKK -->
+        <div class="card p-6 shadow-2xl">
             <div class="flex justify-between items-center mb-5">
-                <h2 class="text-sm font-black text-white uppercase tracking-widest italic">Hele prosjektet</h2>
-                <button onclick="window.showMonterat()" class="bg-blue-600 text-white text-[10px] font-black px-4 py-2 rounded-xl shadow-lg active:scale-95 flex items-center gap-2 uppercase tracking-tighter hover:bg-blue-500 transition-colors">
-                    📦 Montert totalt
-                </button>
+                <h2 class="text-sm font-black text-white uppercase tracking-widest italic underline decoration-sweden-yellow underline-offset-4 decoration-2">Hele Prosjektet</h2>
+                <button onclick="window.showMonterat()" class="bg-blue-600 text-white text-[10px] font-black px-4 py-2 rounded-xl shadow-lg active:scale-95 uppercase tracking-tighter">📦 Montert Totalt</button>
             </div>
-            
             <div class="space-y-3">
-                <div class="bg-slate-900 p-4 rounded-2xl border border-sweden-yellow flex justify-between items-center shadow-2xl">
-                    <span class="text-[10px] text-gray-500 uppercase font-black">Totalresultat</span>
-                    <span id="disp-proj-result" class="text-2xl font-black text-green-400 font-mono tracking-tighter">0 kr</span>
-                </div>
-
+                <div class="bg-slate-900 p-4 rounded-2xl border border-sweden-yellow flex justify-between items-center shadow-inner"><span class="text-[10px] text-gray-500 uppercase font-black tracking-widest">Totalfortjeneste</span><span id="disp-proj-result" class="text-2xl font-black text-green-400 font-mono tracking-tighter text-right">0 kr</span></div>
                 <div class="grid grid-cols-2 gap-3">
-                    <div class="bg-slate-900 p-3 rounded-2xl border border-slate-700 text-center shadow-inner">
-                        <div class="text-[9px] text-gray-500 uppercase font-black mb-1">Akkord Brutto</div>
-                        <div id="disp-proj-akkord" class="text-base font-black text-blue-300 font-mono">0 kr</div>
-                    </div>
-                    <div class="bg-slate-900 p-3 rounded-2xl border border-slate-700 text-center shadow-inner">
-                        <div class="text-[9px] text-gray-500 uppercase font-black mb-1">Snitt/t</div>
-                        <div id="disp-proj-hourly" class="text-base font-black sweden-yellow font-mono">0 kr/t</div>
-                    </div>
+                    <div class="bg-slate-900 p-3 rounded-2xl border border-slate-700 text-center shadow-inner"><div class="text-[9px] text-gray-500 uppercase font-black mb-1">Akkord Brutto</div><div id="disp-proj-akkord" class="text-base font-black text-blue-300 font-mono whitespace-nowrap">0 kr</div></div>
+                    <div class="bg-slate-900 p-3 rounded-2xl border border-slate-700 text-center shadow-inner"><div class="text-[9px] text-gray-500 uppercase font-black mb-1">Snitt/h</div><div id="disp-proj-hourly" class="text-base font-black sweden-yellow font-mono whitespace-nowrap">0 kr/h</div></div>
                 </div>
-
-                <div class="text-right text-[11px] text-gray-600 font-black uppercase tracking-widest pr-1 pt-2">
-                    Totalt arbeidet: <span id="disp-proj-hours" class="text-gray-400 font-mono text-sm ml-1">0</span> t
-                </div>
+                <div class="text-right text-[11px] text-gray-600 font-black uppercase tracking-widest pr-1 pt-2 opacity-50 italic">Arbeidet totalt: <span id="disp-proj-hours" class="text-gray-300 font-mono text-sm ml-1">0</span> h</div>
             </div>
-
-            <!-- LOGGLISTA -->
             <div class="mt-8 pt-4 border-t border-slate-700">
-                <h3 class="text-[10px] font-black text-gray-600 mb-4 uppercase tracking-[0.3em] text-center">Registrert denne måneden</h3>
-                <div id="log-list" class="space-y-2 max-h-80 overflow-y-auto pb-4 pr-1 custom-scrollbar">
-                    <!-- JS fyller rader -->
-                </div>
+                <h3 class="text-[10px] font-black text-white mb-4 uppercase tracking-[0.3em] text-center opacity-70">Logget i valgt periode (<span id="disp-active-month">Måned</span>)</h3>
+                <div id="log-list" class="space-y-3 max-h-[500px] overflow-y-auto pb-4 pr-1 custom-scrollbar"></div>
             </div>
         </div>
 
-        <!-- HANDLINGAR -->
+
         <div class="grid grid-cols-2 gap-4">
-            <button onclick="window.startNewPeriod()" class="bg-orange-600 text-white font-black py-4 rounded-2xl shadow-xl text-xs uppercase active:scale-95 transition-transform">Steng måned</button>
-            <button onclick="window.saveSnapshot()" class="bg-teal-700 text-white font-black py-4 rounded-2xl shadow-xl text-xs uppercase active:scale-95 transition-transform">Lagre Snapshot</button>
+            <button onclick="window.startNewPeriod()" class="bg-orange-600 text-white font-black py-4 rounded-2xl shadow-xl text-[10px] uppercase active:scale-95 transition-transform">Lukk Måned</button>
+            <button onclick="window.saveSnapshot()" class="bg-teal-700 text-white font-black py-4 rounded-2xl shadow-xl text-[10px] uppercase active:scale-95 transition-transform">Lagre Snapshot</button>
         </div>
         
         <div class="pt-4 border-t border-gray-800">
-            <label for="import-file-selector" class="import-label">
-                📂 Gjenopprett Backup (JSON)
-                <input type="file" id="import-file-selector" class="hidden" onchange="window.handleImport(this)">
-            </label>
+            <label class="flex items-center justify-center bg-slate-700 text-gray-100 font-black p-4 rounded-2xl border-2 border-dashed border-slate-600 text-[11px] uppercase cursor-pointer shadow-inner active:scale-95 transition-transform">📂 Gjenopprett Backup (JSON)<input type="file" class="hidden" id="import-input"></label>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
-            <button onclick="window.exportExcel()" class="bg-green-700 text-white font-black py-3 rounded-2xl shadow-lg text-[10px] uppercase">Eksporter Excel</button>
-            <button onclick="window.exportJson()" class="bg-slate-800 text-gray-400 font-black py-3 rounded-2xl border border-slate-700 text-[10px] uppercase">Lagre Backup</button>
+
+        <div class="grid grid-cols-1 gap-4">
+            <button onclick="window.exportJson()" class="w-full bg-slate-800 text-gray-400 font-black py-3 rounded-2xl border border-slate-700 text-[10px] uppercase tracking-tighter">Lagre Backup (JSON)</button>
         </div>
 
-        <button onclick="window.showHistory()" class="w-full bg-slate-800 text-blue-400 font-black py-3 rounded-2xl border border-slate-700 text-[10px] uppercase tracking-widest mt-2">
-            Vis historikk
-        </button>
 
-        <div class="pt-6">
-            <button onclick="window.resetAll()" class="w-full bg-red-950/20 text-red-900 font-black py-2 rounded-xl text-[8px] uppercase tracking-[0.4em] opacity-40 hover:opacity-100 transition-opacity">Nullstill alt</button>
-        </div>
+        <button onclick="window.showHistory()" class="w-full bg-slate-800 text-blue-400 font-black py-3 rounded-2xl border border-slate-700 text-[10px] uppercase tracking-widest mt-2 shadow-lg active:scale-95">Vis Historikk & Sammenligning</button>
+        <div class="pt-6"><button onclick="window.resetAll()" class="w-full bg-red-950/20 text-red-900 font-black py-2 rounded-xl text-[8px] uppercase tracking-[0.4em] opacity-30 hover:opacity-100 transition-opacity">Nullstill All Lokal Data</button></div>
     </div>
+
 
     <!-- MODALER -->
-    <div id="monterat-modal" class="modal-overlay">
-        <div class="bg-slate-800 w-full max-w-md p-6 rounded-[2rem] border border-blue-500 shadow-2xl flex flex-col max-h-[85vh]">
-            <h2 class="text-2xl font-black text-white uppercase tracking-tighter">Montert totalt</h2>
-            <p class="text-[10px] text-gray-500 mb-6 uppercase font-black border-b border-slate-700 pb-2 tracking-widest">Full sammanställning</p>
-            <div id="monterat-list" class="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar"></div>
-            <button onclick="document.getElementById('monterat-modal').classList.remove('active')" class="mt-6 w-full bg-blue-600 text-white py-4 rounded-2xl font-black shadow-lg uppercase tracking-widest">Lukk</button>
-        </div>
-    </div>
+    <div id="confirm-modal" class="modal-overlay" style="z-index: 2000;"><div class="bg-slate-800 w-full max-w-sm p-8 rounded-[2rem] border border-slate-600 shadow-2xl text-center"><p id="confirm-msg" class="text-white text-lg mb-8 font-bold leading-tight"></p><div class="flex justify-center gap-4"><button onclick="window.closeConfirm()" class="bg-slate-700 text-gray-300 px-6 py-4 rounded-xl font-black uppercase text-[10px] tracking-widest flex-1">Avbryt</button><button id="confirm-yes-btn" class="bg-green-600 text-white px-8 py-4 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-lg flex-1">Bekreft</button></div></div></div>
+    <div id="alert-modal" class="modal-overlay" style="z-index: 2000;"><div class="bg-slate-800 w-full max-w-sm p-8 rounded-[2rem] border border-slate-600 shadow-2xl text-center"><p id="alert-msg" class="text-white text-lg mb-8 font-bold leading-tight"></p><button onclick="document.getElementById('alert-modal').classList.remove('active')" class="bg-blue-600 text-white px-12 py-4 rounded-xl font-black uppercase text-[10px] shadow-lg">OK</button></div></div>
+    <div id="monterat-modal" class="modal-overlay"><div class="bg-slate-800 w-full max-w-md p-6 rounded-[2rem] border border-blue-500 shadow-2xl flex flex-col max-h-[85vh]"><h2 class="text-2xl font-black text-white uppercase tracking-tighter italic underline decoration-blue-500 underline-offset-8">Montert totalt</h2><div id="monterat-list" class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar mt-4"></div><button onclick="document.getElementById('monterat-modal').classList.remove('active')" class="mt-6 w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl active:scale-95 transition-transform">Lukk</button></div></div>
+    <div id="hour-log-modal" class="modal-overlay"><div class="bg-slate-800 w-full max-w-md p-6 rounded-[2rem] border border-blue-500 shadow-2xl flex flex-col max-h-[85vh]"><h2 class="text-2xl font-black text-white uppercase tracking-tighter">Timelogg</h2><div id="hour-log-list" class="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar pt-2"></div><button onclick="document.getElementById('hour-log-modal').classList.remove('active')" class="mt-6 w-full bg-slate-700 text-white py-4 rounded-2xl font-black uppercase tracking-widest">Lukk</button></div></div>
+    <div id="article-modal" class="modal-overlay"><div class="bg-slate-800 w-full max-w-md p-6 rounded-[2rem] border border-slate-700 shadow-2xl"><h2 class="text-xl font-black text-white mb-4 uppercase tracking-tighter">Bibliotek</h2><div class="space-y-4 mb-6 bg-slate-900/50 p-4 rounded-3xl border border-slate-700 shadow-inner"><input type="text" id="new-art-name" placeholder="Navn (Svenska)" class="w-full p-4 bg-slate-900 text-white rounded-xl border border-slate-700 font-bold"><div class="flex gap-3"><input type="text" inputmode="decimal" id="new-art-price" placeholder="Pris" class="flex-1 p-4 bg-slate-900 text-white rounded-xl border border-slate-700 font-mono font-bold"><select id="new-art-unit" class="w-24 p-4 bg-slate-900 text-white rounded-xl border border-slate-700 font-bold uppercase text-[11px]"><option value="st">st</option><option value="m">m</option><option value="m²">m²</option></select></div><button onclick="window.saveNewArticle()" class="w-full bg-blue-600 text-white font-black py-4 rounded-xl uppercase shadow-lg tracking-widest active:scale-95 transition-transform">Lagre i bibliotek</button></div><div class="border-t border-slate-700 pt-4 max-h-48 overflow-y-auto custom-scrollbar" id="article-db-list"></div><button onclick="document.getElementById('article-modal').classList.remove('active')" class="mt-4 w-full text-gray-500 font-black uppercase text-[10px]">Lukk</button></div></div>
+    <div id="history-modal" class="modal-overlay"><div class="bg-slate-800 w-full max-w-lg p-6 rounded-[2rem] border border-slate-700 shadow-2xl flex flex-col max-h-[90vh]"><h2 class="text-xl font-black text-white uppercase tracking-widest mb-4 italic text-center">Historikk & Sammenligning</h2><div id="history-stats-summary" class="mb-4"></div><div id="history-content" class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar"></div><button onclick="document.getElementById('history-modal').classList.remove('active')" class="mt-6 w-full bg-slate-700 py-3 rounded-2xl font-black uppercase text-xs shadow-xl active:scale-95">Lukk</button></div></div>
+    <div id="edit-entry-modal" class="modal-overlay"><div class="bg-slate-800 w-full max-w-sm p-8 rounded-[2rem] border border-blue-500 shadow-2xl text-center"><h2 class="text-xl font-black text-white mb-2 uppercase tracking-tighter">Endre Antall</h2><p id="edit-subtitle" class="text-[10px] text-gray-500 mb-6 uppercase font-black"></p><input type="text" inputmode="decimal" id="edit-qty-input" class="w-full p-4 bg-slate-900 text-white text-2xl border border-slate-700 focus:border-yellow-500 text-center font-black shadow-inner mb-6 rounded-xl"><div class="flex justify-center gap-4"><button onclick="document.getElementById('edit-entry-modal').classList.remove('active')" class="bg-slate-700 text-gray-300 px-6 py-4 rounded-xl font-black uppercase text-[10px] tracking-widest flex-1">Avbryt</button><button id="edit-save-btn" class="bg-blue-600 text-white px-8 py-4 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-lg flex-1 active:scale-95">Lagre</button></div></div></div>
+    <div id="month-picker-modal" class="modal-overlay"><div class="bg-slate-800 w-full max-w-sm p-6 rounded-[2rem] border border-orange-500 shadow-2xl flex flex-col"><h2 class="text-xl font-black text-white uppercase tracking-widest mb-4 italic text-center text-orange-500">Velg Måned</h2><div id="month-list" class="grid grid-cols-3 gap-2"></div><button onclick="document.getElementById('month-picker-modal').classList.remove('active')" class="mt-6 text-gray-500 font-black uppercase text-[10px] py-2">Avbryt</button></div></div>
+    <div id="settings-modal" class="modal-overlay"><div class="bg-slate-800 w-full max-w-sm p-5 rounded-xl border border-slate-600 shadow-2xl"><h2 class="text-xl font-bold text-white mb-4 uppercase tracking-widest text-center">Innstillinger</h2><div class="space-y-4 text-left"><div><label class="text-[10px] text-gray-500 font-bold uppercase mb-1 block tracking-widest">Timelønn (kr)</label><input type="text" inputmode="decimal" id="set-hourly-rate" onchange="window.updateSettings()" class="w-full p-4 bg-slate-900 text-white rounded-xl border border-slate-700 font-bold shadow-inner"></div><div class="relative"><label class="text-[10px] text-gray-500 font-bold uppercase mb-1 block tracking-widest opacity-50">Cloud Script URL (Permanent)</label><div class="flex gap-2"><input type="text" id="set-cloud-url" placeholder="https://..." class="flex-1 p-4 bg-slate-950 text-gray-500 rounded-xl border border-slate-800 text-[9px] shadow-inner" disabled><button class="bg-slate-700 px-3 rounded-xl border border-slate-600 opacity-50">🔒</button></div></div></div><div class="mt-6 flex justify-end"><button onclick="document.getElementById('settings-modal').classList.remove('active')" class="bg-green-600 text-white px-8 py-3 rounded-xl font-black uppercase text-[10px] active:scale-95 shadow-lg">Ferdig</button></div></div></div>
 
-    <div id="article-modal" class="modal-overlay">
-        <div class="bg-slate-800 w-full max-w-md p-6 rounded-[2rem] border border-slate-700 shadow-2xl">
-            <h2 class="text-xl font-black text-white mb-4 uppercase tracking-tighter">Bibliotek</h2>
-            <div class="space-y-4 mb-6 bg-slate-900/50 p-4 rounded-3xl border border-slate-700 shadow-inner">
-                <input type="text" id="new-art-name" placeholder="Navn" class="w-full p-4 bg-slate-900 text-white rounded-xl border border-slate-700 font-bold outline-none shadow-inner">
-                <div class="flex gap-3">
-                    <input type="text" inputmode="decimal" id="new-art-price" placeholder="Pris" class="flex-1 p-4 bg-slate-900 text-white rounded-xl border border-slate-700 font-mono font-bold shadow-inner">
-                    <select id="new-art-unit" class="w-24 p-4 bg-slate-900 text-white rounded-xl border border-slate-700 font-bold uppercase text-[10px]">
-                        <option value="m">m</option>
-                        <option value="st">st</option>
-                        <option value="m²">m²</option>
-                    </select>
-                </div>
-                <button onclick="window.saveNewArticle()" class="w-full bg-blue-600 text-white font-black py-4 rounded-xl uppercase shadow-lg">Lagre</button>
-            </div>
-            <div class="border-t border-slate-700 pt-4 max-h-48 overflow-y-auto custom-scrollbar" id="article-db-list"></div>
-            <button onclick="document.getElementById('article-modal').classList.remove('active')" class="mt-4 w-full text-gray-500 font-black uppercase text-[10px] p-2">Lukk</button>
-        </div>
-    </div>
-
-    <!-- MODAL FOR REDIGERING AV RAD -->
-    <div id="edit-entry-modal" class="modal-overlay">
-        <div class="bg-slate-800 w-full max-w-sm p-8 rounded-[2rem] border border-blue-500 shadow-2xl text-center">
-            <h2 class="text-xl font-black text-white mb-2 uppercase tracking-tighter" id="edit-title">Korriger mengde</h2>
-            <p class="text-[10px] text-gray-500 mb-6 uppercase font-black" id="edit-subtitle"></p>
-            <input type="text" inputmode="decimal" id="edit-qty-input" class="w-full p-4 bg-slate-900 text-white text-2xl border border-slate-700 focus:border-yellow-500 text-center font-black shadow-inner mb-6 rounded-xl">
-            <div class="flex justify-center gap-4">
-                <button onclick="document.getElementById('edit-entry-modal').classList.remove('active')" class="bg-slate-700 text-gray-300 px-6 py-4 rounded-xl font-black uppercase text-[10px] tracking-widest">Avbryt</button>
-                <button id="edit-save-btn" class="bg-blue-600 text-white px-8 py-4 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-lg">Lagre endring</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="history-modal" class="modal-overlay">
-        <div class="bg-slate-800 w-full max-w-lg p-6 rounded-[2rem] border border-slate-700 shadow-2xl flex flex-col max-h-[90vh]">
-            <h2 class="text-xl font-black text-white uppercase tracking-widest mb-4 italic text-center">Historikk</h2>
-            <div id="history-content" class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar"></div>
-            <button onclick="document.getElementById('history-modal').classList.remove('active')" class="mt-6 w-full bg-slate-700 py-3 rounded-2xl font-black uppercase text-xs">Lukk</button>
-        </div>
-    </div>
-
-    <!-- DIALOGER -->
-    <div id="confirm-modal" class="modal-overlay" style="z-index: 2000;">
-        <div class="bg-slate-800 w-full max-w-sm p-8 rounded-[2rem] border border-slate-600 shadow-2xl text-center">
-            <p id="confirm-msg" class="text-white text-lg mb-8 font-bold leading-tight"></p>
-            <div class="flex justify-center gap-4">
-                <button onclick="window.closeConfirm()" class="bg-slate-700 text-gray-300 px-6 py-4 rounded-xl font-black uppercase text-[10px] tracking-widest">Avbryt</button>
-                <button id="confirm-yes-btn" class="bg-green-600 text-white px-8 py-4 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-lg">Bekreft</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="alert-modal" class="modal-overlay" style="z-index: 2000;">
-        <div class="bg-slate-800 w-full max-w-sm p-8 rounded-[2rem] border border-slate-600 shadow-2xl text-center">
-            <p id="alert-msg" class="text-white text-lg mb-8 font-bold leading-tight"></p>
-            <button onclick="document.getElementById('alert-modal').classList.remove('active')" class="bg-blue-600 text-white px-12 py-4 rounded-xl font-black uppercase text-[10px]">OK</button>
-        </div>
-    </div>
-
-    <div id="settings-modal" class="modal-overlay">
-        <div class="bg-slate-800 w-full max-w-sm p-5 rounded-xl border border-slate-600 shadow-2xl">
-            <h2 class="text-xl font-bold text-white mb-4 uppercase tracking-widest text-center">Innstillinger</h2>
-            <div class="mb-4"><label class="text-[10px] text-gray-500 font-bold uppercase mb-1 block">Timelønn (kr)</label><input type="text" inputmode="decimal" id="set-hourly-rate" onchange="window.updateSettings()" class="w-full p-4 bg-slate-900 text-white rounded-xl border border-slate-700 font-bold shadow-inner"></div>
-            <div class="mt-4 flex justify-end"><button onclick="document.getElementById('settings-modal').classList.remove('active')" class="bg-green-600 text-white px-8 py-3 rounded-xl font-black uppercase text-[10px]">Lagre</button></div>
-        </div>
-    </div>
 
     <script>
-        const DB_KEY = 'timjagaren_v6_norsk_db';
-        
-        let state = {
-            settings: { hourlyRate: 0, baseAmount: 0 },
-            articleLib: [ 
-                { id: 'art_1', name: "Beslagskledning Balkong", price: 0, unit: 'm²' }, 
-                { id: 'art_2', name: "Endelukk", price: 0, unit: 'st' },
-                { id: 'art_3', name: "Mellomstykke Balkong", price: 0, unit: 'st' }
-            ],
-            currentPeriod: { month: getMonthName(), hours: 0, log: [] },
-            history: [],
+        // --- HJELPEFUNKSJONER ---
+        function parseNum(v) { 
+            if (v === undefined || v === null || v === '') return 0;
+            if (typeof v === 'number') return v;
+            let str = String(v).replace(',', '.');
+            const num = parseFloat(str);
+            return isNaN(num) ? 0 : num;
+        }
+        function fmtMoney(n) { return new Intl.NumberFormat('no-NO', { style: 'currency', currency: 'NOK', maximumFractionDigits: 0 }).format(n); }
+        function fmtNum(n) { return new Intl.NumberFormat('no-NO', { maximumFractionDigits: 2 }).format(n); }
+        function customAlert(msg) { const el = document.getElementById('alert-msg'); if(el) { el.innerText = msg; document.getElementById('alert-modal').classList.add('active'); } }
+        function customConfirm(msg, callback) { const el = document.getElementById('confirm-msg'); if(el) { el.innerText = msg; const yesBtn = document.getElementById('confirm-yes-btn'); yesBtn.onclick = () => { document.getElementById('confirm-modal').classList.remove('active'); callback(); }; document.getElementById('confirm-modal').classList.add('active'); } }
+        window.closeConfirm = function() { document.getElementById('confirm-modal').classList.remove('active'); }
+
+
+        const DB_KEY = 'tim_jagaren_v7_final_storage'; 
+        const MONTHS = ["Januar", "Februar", "Mars", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Desember"];
+        const KONSTANT_URL = "https://script.google.com/macros/s/AKfycbxmrMw9WviXnxMjcJswzYaTDIRtmkVDehxYdlMybjWzyGTTtiOk7IOIsk0eUbDvZATQ/exec"; 
+
+
+        let state = { 
+            settings: { hourlyRate: 0, cloudUrl: KONSTANT_URL, workerName: '' }, 
+            articleLib: [], 
+            currentPeriod: { month: MONTHS[new Date().getMonth()], hours: 0, hourLog: [], log: [], syncedHours: 0 }, 
+            history: [], 
             accumulatedSurplus: 0, 
             accumulatedHours: 0, 
-            accumulatedAkkordTotal: 0
-        };
-
-        window.onload = () => { loadData(); sanitizeState(); renderUI(); };
-
-        function getMonthName() {
-            const m = ["Januar", "Februar", "Mars", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Desember"];
-            return m[new Date().getMonth()];
-        }
-
-        function loadData() {
-            try {
-                const raw = localStorage.getItem(DB_KEY);
-                if(raw) {
-                    const parsed = JSON.parse(raw);
-                    state = { ...state, ...parsed };
-                }
-            } catch(e) { console.error("Laddning misslyckades", e); }
-        }
-
-        function getStandardName(name) {
-            if(!name) return "Ukjent";
-            const n = name.toLowerCase();
-            if (n.includes("beslagskledning")) return "Beslagskledning Balkong";
-            if (n.includes("mellanbit") || n.includes("mellomstykke") || n.includes("mellombit")) return "Mellomstykke Balkong";
-            if (n.includes("endelukk") || n.includes("endelokk")) return "Endelukk";
-            return name.trim();
-        }
-
-        function sanitizeState() {
-             state.settings.hourlyRate = parseNum(state.settings.hourlyRate);
-             state.currentPeriod.hours = parseNum(state.currentPeriod.hours);
-             state.accumulatedSurplus = parseNum(state.accumulatedSurplus);
-             state.accumulatedHours = parseNum(state.accumulatedHours);
-             state.accumulatedAkkordTotal = parseNum(state.accumulatedAkkordTotal);
-
-             if(!state.history) state.history = [];
-             
-             let cleanedLib = [];
-             let seen = new Set();
-             
-             state.articleLib.forEach(art => {
-                 if (!art || !art.name) return;
-                 let n = getStandardName(art.name);
-                 let lower = n.toLowerCase();
-                 let unit = art.unit || 'm';
-
-                 if (lower.includes("beslagskledning")) { unit = "m²"; }
-                 else if (lower.includes("balkong") || lower.includes("endelukk")) { unit = "st"; }
-
-                 let key = n.toLowerCase();
-                 if (!seen.has(key)) {
-                     cleanedLib.push({ ...art, name: n, unit: unit });
-                     seen.add(key);
-                 }
-             });
-             state.articleLib = cleanedLib;
-
-             state.currentPeriod.log.forEach(item => {
-                 item.price = parseNum(item.price);
-                 item.qty = parseNum(item.qty);
-                 item.total = parseNum(item.total);
-                 
-                 item.name = getStandardName(item.name);
-                 const lower = item.name.toLowerCase();
-                 if (lower.includes("beslagskledning")) item.unit = "m²";
-                 else if (lower.includes("endelukk") || lower.includes("balkong")) item.unit = "st";
-                 else if (!item.unit) item.unit = 'm';
-
-                 if(!item.id) item.id = "id_" + Date.now() + "_" + Math.random();
-             });
-        }
-
-        function saveData() {
-            localStorage.setItem(DB_KEY, JSON.stringify(state));
-            renderUI();
-        }
-        
-        function renderUI() {
-            const safeSet = (id, val, isMoney = false, isNum = false) => {
-                const el = document.getElementById(id);
-                if (el) {
-                    if (isMoney) el.innerText = fmtMoney(parseNum(val));
-                    else if (isNum) el.innerText = fmtNum(parseNum(val));
-                    else el.innerText = val;
-                }
-            };
-
-            safeSet('period-label', state.currentPeriod.month);
-            safeSet('header-month-label', state.currentPeriod.month);
-            
-            const select = document.getElementById('article-select');
-            if (select) {
-                const currentVal = select.value;
-                select.innerHTML = '<option value="">-- Velg artikkel --</option>';
-                state.articleLib.forEach((art, index) => {
-                    const opt = document.createElement('option');
-                    opt.value = art.id;
-                    opt.text = `${index + 1}. ${art.name} (${art.price} kr/${art.unit})`;
-                    select.appendChild(opt);
-                });
-                if(currentVal) select.value = currentVal;
-            }
-
-            const monthlySalary = state.currentPeriod.hours * state.settings.hourlyRate; 
-            let monthlyAkkordSum = 0;
-            state.currentPeriod.log.forEach(item => monthlyAkkordSum += item.total);
-            const monthlyResult = monthlyAkkordSum - monthlySalary;
-
-            let historyHours = 0;
-            let historyResult = 0;
-            let historyAkkordSum = 0; 
-            
-            state.history.forEach(h => {
-                if (!h.isSnapshot) { 
-                    historyHours += parseNum(h.hours);
-                    historyResult += parseNum(h.result); 
-                    historyAkkordSum += h.akkordSum ? parseNum(h.akkordSum) : (h.log ? h.log.reduce((acc,i)=>acc+parseNum(i.total),0) : 0);
-                }
-            });
-
-            const totalHours = historyHours + state.currentPeriod.hours + state.accumulatedHours;
-            const projectAkkordTotal = historyAkkordSum + monthlyAkkordSum + state.accumulatedAkkordTotal;
-            const totalResult = historyResult + monthlyResult + state.accumulatedSurplus; 
-            const totalHourlyRate = totalHours > 0 ? totalResult / totalHours : 0;
-
-            safeSet('disp-curr-hours', state.currentPeriod.hours, false, true);
-            safeSet('disp-curr-salary', monthlySalary, true);
-            
-            const elResM = document.getElementById('disp-result-month');
-            if(elResM) {
-                elResM.innerText = fmtMoney(monthlyResult);
-                elResM.className = `text-lg font-black font-mono ${monthlyResult >= 0 ? 'text-green-400' : 'text-red-400'}`;
-            }
-
-            safeSet('disp-proj-akkord', projectAkkordTotal, true);
-            safeSet('disp-proj-result', totalResult, true);
-            safeSet('disp-proj-hourly', fmtMoney(totalHourlyRate) + "/t");
-            safeSet('disp-proj-hours', totalHours, false, true);
-
-            const list = document.getElementById('log-list');
-            if(list) {
-                list.innerHTML = '';
-                if(state.currentPeriod.log.length === 0) {
-                    list.innerHTML = '<div class="text-center text-gray-700 text-[10px] py-10 font-black uppercase opacity-30 italic">Loggboken er tom</div>';
-                } else {
-                    const sortedLog = [...state.currentPeriod.log].sort((a, b) => {
-                        const idxA = state.articleLib.findIndex(l => l.name.toLowerCase() === a.name.toLowerCase());
-                        const idxB = state.articleLib.findIndex(l => l.name.toLowerCase() === b.name.toLowerCase());
-                        return (idxA === -1 ? 999 : idxA) - (idxB === -1 ? 999 : idxB);
-                    });
-
-                    sortedLog.forEach((item) => {
-                        const libIdx = state.articleLib.findIndex(l => l.name.toLowerCase() === item.name.toLowerCase());
-                        const displayNum = libIdx !== -1 ? (libIdx + 1) : '?';
-
-                        const div = document.createElement('div');
-                        div.className = 'bg-slate-900 p-3 rounded-2xl border border-slate-800 flex justify-between items-center shadow-md mb-2 shadow-inner';
-                        div.innerHTML = `
-                            <div class="flex-1">
-                                <div class="text-white font-black text-sm truncate pr-2">
-                                    <span class="text-blue-500 mr-1 font-mono">${displayNum}.</span> ${item.name}
-                                </div>
-                                <div class="text-[9px] text-gray-500 font-bold uppercase">${fmtNum(item.qty)} ${item.unit} <span class="mx-1">|</span> ${item.price} kr</div>
-                            </div>
-                            <div class="text-right flex flex-col gap-1">
-                                <div class="text-blue-400 font-mono font-black text-sm">${fmtMoney(item.total)}</div>
-                                <div class="flex gap-2 justify-end">
-                                    <button onclick="window.editEntry('${item.id}')" class="text-[8px] text-blue-300 font-black px-2 py-0.5 bg-slate-800 rounded uppercase border border-blue-900/30">Endre</button>
-                                    <button onclick="window.removeEntry('${item.id}')" class="text-[8px] text-red-900 font-black px-2 py-0.5 bg-slate-950 rounded uppercase shadow-md active:bg-red-600 transition-colors">Slett</button>
-                                </div>
-                            </div>
-                        `;
-                        list.appendChild(div);
-                    });
-                }
-            }
-        }
-
-        window.addHours = () => {
-            const input = document.getElementById('hours-input');
-            const val = parseNum(input.value);
-            if(val > 0) { state.currentPeriod.hours += val; input.value = ''; saveData(); }
-        };
-
-        window.subtractHours = () => {
-            const input = document.getElementById('hours-input');
-            const val = parseNum(input.value);
-            if(val > 0) { state.currentPeriod.hours -= val; if(state.currentPeriod.hours < 0) state.currentPeriod.hours = 0; input.value = ''; saveData(); }
-        };
-
-        window.onArticleSelect = () => {
-            const id = document.getElementById('article-select').value;
-            const display = document.getElementById('disp-price');
-            const art = state.articleLib.find(a => a.id == id);
-            if(art) {
-                display.innerText = `${art.price} / ${art.unit}`;
-                document.getElementById('article-qty').focus();
-            } else { display.innerText = "-"; }
-        };
-
-        window.addEntry = () => {
-            const id = document.getElementById('article-select').value;
-            const qtyInput = document.getElementById('article-qty');
-            const qty = parseNum(qtyInput.value);
-            if(!id || qty === 0) return;
-            const art = state.articleLib.find(a => a.id == id);
-            const stdName = getStandardName(art.name);
-
-            const existingIndex = state.currentPeriod.log.findIndex(i => i.name === stdName);
-
-            if (existingIndex !== -1) {
-                state.currentPeriod.log[existingIndex].qty += qty;
-                state.currentPeriod.log[existingIndex].total = state.currentPeriod.log[existingIndex].qty * state.currentPeriod.log[existingIndex].price;
-            } else {
-                let unit = art.unit;
-                const lower = stdName.toLowerCase();
-                if (lower.includes("beslagskledning")) unit = "m²";
-                else if (lower.includes("endelukk") || lower.includes("balkong")) unit = "st";
-
-                state.currentPeriod.log.push({ 
-                    id: "id_" + Date.now() + "_" + Math.random(), 
-                    name: stdName, 
-                    price: art.price, 
-                    qty: qty, 
-                    unit: unit, 
-                    total: art.price * qty 
-                });
-            }
-            qtyInput.value = '';
-            saveData();
-        };
-
-        window.removeEntry = (id) => {
-            customConfirm("Slette raden?", () => { 
-                state.currentPeriod.log = state.currentPeriod.log.filter(item => String(item.id) !== String(id));
-                saveData(); 
-            });
-        };
-
-        window.editEntry = (id) => {
-            const entry = state.currentPeriod.log.find(i => String(i.id) === String(id));
-            if(!entry) return;
-
-            const modal = document.getElementById('edit-entry-modal');
-            const input = document.getElementById('edit-qty-input');
-            const subtitle = document.getElementById('edit-subtitle');
-            const saveBtn = document.getElementById('edit-save-btn');
-
-            subtitle.innerText = `${entry.name} (${entry.unit})`;
-            input.value = entry.qty;
-            
-            saveBtn.onclick = () => {
-                const newQty = parseNum(input.value);
-                if(newQty >= 0) {
-                    entry.qty = newQty;
-                    entry.total = entry.qty * entry.price;
-                    modal.classList.remove('active');
-                    saveData();
-                }
-            };
-
-            modal.classList.add('active');
-            setTimeout(() => {
-                input.focus();
-                input.select();
-            }, 100);
-        };
-
-        window.showMonterat = () => {
-            const listEl = document.getElementById('monterat-list');
-            listEl.innerHTML = '';
-            let summary = {}; 
-
-            const addToSummary = (name, qty, unit) => {
-                const standardName = getStandardName(name);
-                const lower = standardName.toLowerCase();
-                
-                let finalUnit = unit;
-                if(lower.includes("endelukk") || lower.includes("balkong")) finalUnit = "st";
-                if(lower.includes("beslagskledning")) finalUnit = "m²";
-
-                if(!summary[standardName]) {
-                    summary[standardName] = { qty: 0, unit: finalUnit };
-                }
-                summary[standardName].qty += parseNum(qty);
-            };
-
-            state.currentPeriod.log.forEach(i => addToSummary(i.name, i.qty, i.unit));
-
-            state.history.forEach(p => {
-                if(!p.isSnapshot && p.log) {
-                    p.log.forEach(i => addToSummary(i.name, i.qty, i.unit));
-                }
-            });
-
-            const libraryNames = state.articleLib.map(a => a.name);
-            const finalSortedKeys = [...libraryNames];
-            Object.keys(summary).forEach(name => {
-                if (!finalSortedKeys.includes(name)) finalSortedKeys.push(name);
-            });
-
-            let hasContent = false;
-            finalSortedKeys.forEach(k => {
-                if (summary[k] && summary[k].qty > 0) {
-                    hasContent = true;
-                    const data = summary[k];
-                    const unit = k.toLowerCase().includes("endelukk") ? "st" : data.unit;
-                    const libIdx = state.articleLib.findIndex(l => l.name.toLowerCase() === k.toLowerCase());
-                    const displayNum = libIdx !== -1 ? (libIdx + 1) : '?';
-
-                    const div = document.createElement('div');
-                    div.className = 'flex justify-between items-center p-4 bg-slate-900 rounded-[1.2rem] border border-slate-700 mb-2 shadow-inner';
-                    div.innerHTML = `<span class="font-black text-gray-300 text-xs truncate mr-2"><span class="text-blue-500 mr-1 font-mono">${displayNum}.</span> ${k}</span><span class="text-blue-400 font-black text-lg font-mono whitespace-nowrap">${fmtNum(data.qty)} <small class="text-gray-600 uppercase text-[9px]">${unit}</small></span>`;
-                    listEl.appendChild(div);
-                }
-            });
-
-            if (!hasContent) {
-                 listEl.innerHTML = '<p class="text-center text-gray-700 py-10 uppercase text-[10px] font-black italic">Ingen data registrert</p>';
-            }
-            
-            document.getElementById('monterat-modal').classList.add('active');
-        };
-
-        window.showSettings = () => {
-            const el = document.getElementById('set-hourly-rate');
-            if(el) el.value = state.settings.hourlyRate;
-            document.getElementById('settings-modal').classList.add('active');
+            accumulatedAkkordTotal: 0, 
+            lastSyncTime: 0 
         };
         
-        window.updateSettings = () => {
-            state.settings.hourlyRate = parseNum(document.getElementById('set-hourly-rate').value);
-            saveData();
-        };
-
-        window.showArticleManager = () => {
-            const list = document.getElementById('article-db-list');
-            list.innerHTML = '';
-            state.articleLib.forEach((art, idx) => {
-                list.innerHTML += `
-                    <div class="flex justify-between items-center py-3 border-b border-slate-700/50 text-xs">
-                        <div class="text-white font-bold">${idx + 1}. ${art.name} <span class="text-slate-500 lowercase">(${art.unit})</span></div>
-                        <div class="flex items-center gap-3">
-                            <span class="text-gray-500 font-mono">${art.price} kr</span>
-                            <button onclick="window.deleteArticle(${idx})" class="text-red-900 bg-slate-950 p-2 rounded-lg">🗑️</button>
-                        </div>
-                    </div>`;
-            });
-            document.getElementById('article-modal').classList.add('active');
-        };
-
-        window.saveNewArticle = () => {
-            const name = document.getElementById('new-art-name').value;
-            const price = parseNum(document.getElementById('new-art-price').value);
-            let unit = document.getElementById('new-art-unit').value;
-            if(name && !isNaN(price)) {
-                state.articleLib.push({ id: "id_" + Date.now() + "_" + Math.random(), name: name.trim(), price, unit });
-                document.getElementById('new-art-name').value = '';
-                document.getElementById('new-art-price').value = '';
-                document.getElementById('article-select').innerHTML = ""; 
-                saveData(); 
-                window.showArticleManager();
-            }
-        };
-
-        window.deleteArticle = (idx) => {
-            customConfirm("Slette artikkel?", () => { state.articleLib.splice(idx, 1); document.getElementById('article-select').innerHTML = ""; window.showArticleManager(); saveData(); });
-        };
-
-        window.startNewPeriod = () => {
-            customConfirm(`Steng måneden?\nNullstiller nåværende logg.`, () => {
-                const salary = state.currentPeriod.hours * state.settings.hourlyRate;
-                let akkordSum = 0;
-                state.currentPeriod.log.forEach(i => akkordSum += i.total);
-                state.history.unshift({
-                    date: new Date().toISOString(), month: state.currentPeriod.month,
-                    result: akkordSum - salary, hours: state.currentPeriod.hours,
-                    akkordSum: akkordSum, log: [...state.currentPeriod.log], isSnapshot: false 
-                });
-                state.currentPeriod.month = getMonthName();
-                state.currentPeriod.hours = 0;
-                state.currentPeriod.log = [];
-                saveData();
-                customAlert("Måned stengt!");
-            });
-        };
-
-        window.saveSnapshot = () => {
-            customConfirm("Lagre en snapshot?", () => {
-                const salary = state.currentPeriod.hours * state.settings.hourlyRate;
-                let akkordSum = 0;
-                state.currentPeriod.log.forEach(i => akkordSum += i.total);
-                state.history.unshift({
-                    date: new Date().toISOString(), month: state.currentPeriod.month + " (Snap)",
-                    result: akkordSum - salary, hours: state.currentPeriod.hours,
-                    akkordSum: akkordSum, log: JSON.parse(JSON.stringify(state.currentPeriod.log)), isSnapshot: true 
-                });
-                saveData();
-                customAlert("Snapshot lagret i historikken!");
-            });
-        };
-
-        window.showHistory = () => {
-            const content = document.getElementById('history-content');
-            if(state.history.length === 0) content.innerHTML = '<p class="text-center text-gray-500 py-10 font-bold uppercase text-[10px]">Ingen historikk</p>';
-            else {
-                content.innerHTML = state.history.map((h, i) => {
-                    const isSnap = h.isSnapshot;
-                    const borderColor = isSnap ? "border-teal-900" : "border-slate-700";
-                    const bgColor = isSnap ? "bg-teal-900/10" : "bg-slate-800";
-                    const result = parseNum(h.result);
-                    
-                    const itemsHtml = (h.log && h.log.length > 0) ? h.log.map(item => {
-                        return `
-                        <div class="grid grid-cols-12 gap-1 text-[10px] border-t border-slate-700 py-1">
-                            <div class="col-span-6 truncate">${item.name}</div>
-                            <div class="col-span-2 text-right">${fmtNum(item.qty)}</div>
-                            <div class="col-span-4 text-right">${fmtMoney(item.total)}</div>
-                        </div>`;
-                    }).join('') : '<div class="text-[10px] text-gray-600 italic">Ingen rader registrert.</div>';
-
-                    return `
-                    <div class="${bgColor} p-4 rounded-2xl border ${borderColor} mb-3 shadow-sm">
-                        <div class="flex justify-between font-black text-blue-300 uppercase text-[9px] tracking-widest mb-1">
-                            <span>${h.month}</span> <span>${h.date ? h.date.split('T')[0] : ''}</span>
-                        </div>
-                        <div class="mb-3">Resultat: <span class="${result>=0?'text-green-400':'text-red-400'} font-mono font-black">${fmtMoney(result)}</span></div>
-                        
-                        <details class="mb-3">
-                            <summary class="text-[10px] text-gray-400 cursor-pointer p-2 bg-slate-900/50 rounded-lg hover:text-white transition-colors">
-                                Vis registrert materiell ▼
-                            </summary>
-                            <div class="mt-2 bg-slate-900/50 p-2 rounded-xl max-h-40 overflow-y-auto custom-scrollbar">
-                                <div class="grid grid-cols-12 gap-1 text-[8px] uppercase text-gray-500 font-bold mb-1">
-                                    <div class="col-span-6">Artikkel</div>
-                                    <div class="col-span-2 text-right">Antall</div>
-                                    <div class="col-span-4 text-right">Summa</div>
-                                </div>
-                                ${itemsHtml}
-                            </div>
-                        </details>
-
-                        <div class="flex gap-2">
-                             <button onclick="window.exportHistoryExcel(${i})" class="flex-1 bg-green-900/30 text-green-500 font-black py-2 rounded-lg text-[9px] border border-green-900/50 shadow-md">Excel</button>
-                             <button onclick="window.deleteHistoryEntry(${i})" class="flex-1 bg-red-900/10 text-red-900 font-black py-2 rounded-lg text-[9px] border border-red-900/50 shadow-md">Slett</button>
-                        </div>
-                    </div>
-                `}).join('');
-            }
-            document.getElementById('history-modal').classList.add('active');
-        };
-
-        window.deleteHistoryEntry = (idx) => {
-            customConfirm("Slette denne rapporten permanent?", () => {
-                state.history.splice(idx, 1);
-                saveData();
-                window.showHistory();
-            });
-        };
-
-        window.exportExcel = async () => {
-            const salary = state.currentPeriod.hours * state.settings.hourlyRate;
-            let akk = 0; state.currentPeriod.log.forEach(i => akk += i.total);
-            const csv = generateCsv(state.currentPeriod.log, state.currentPeriod.month, state.currentPeriod.hours, salary, akk);
-            await shareOrDownload(csv, `Timejegeren_${state.currentPeriod.month}.csv`);
-        };
-
-        window.exportHistoryExcel = async (idx) => {
-            const h = state.history[idx];
-            const salary = (parseNum(h.hours) || 0) * state.settings.hourlyRate; 
-            const akk = parseNum(h.akkordSum) || (h.log ? h.log.reduce((acc,i)=>acc+parseNum(i.total),0) : 0);
-            const csv = generateCsv(h.log || [], h.month, h.hours || 0, salary, akk);
-            await shareOrDownload(csv, `Timejegeren_${h.month.replace(' ','_')}.csv`);
-        };
-
-        function generateCsv(logItems, monthName, hours, salary, akkord) {
-            let csv = `\ufeffRAPPORT TIMEJEGEREN\nPeriode;${monthName}\nTimer;${fmtNum(hours)}\nLønn;${fmtMoney(salary).replace('NOK','')}\nMånedsresultat;${fmtMoney(akkord - salary).replace('NOK','')}\n\n`;
-            csv += `Nr;Artikkel;Antall;Enhet;Pris;Sum\n`;
-            
-            const sortedItems = [...logItems].sort((a, b) => {
-                const idxA = state.articleLib.findIndex(l => l.name.toLowerCase() === a.name.toLowerCase());
-                const idxB = state.articleLib.findIndex(l => l.name.toLowerCase() === b.name.toLowerCase());
-                return (idxA === -1 ? 999 : idxA) - (idxB === -1 ? 999 : idxB);
-            });
-
-            sortedItems.forEach((i) => {
-                const libIdx = state.articleLib.findIndex(l => l.name.toLowerCase() === i.name.toLowerCase());
-                const displayNum = libIdx !== -1 ? (libIdx + 1) : '?';
-                csv += `${displayNum};${i.name};${i.qty.toString().replace('.',',')};${i.unit};${i.price.toString().replace('.',',')};${i.total.toString().replace('.',',')}\n`; 
-            });
-            return csv;
-        }
-
-        async function shareOrDownload(csv, filename) {
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            if (navigator.canShare && navigator.share) {
-                try {
-                    const file = new File([blob], filename, { type: 'text/csv' });
-                    await navigator.share({ files: [file], title: 'Rapport', text: 'Timejegeren' });
-                    return;
-                } catch (e) { console.warn("Share failed", e); }
-            }
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
-        }
-
-        window.exportJson = () => {
-            const blob = new Blob([JSON.stringify(state)], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = `Backup_${new Date().toISOString().split('T')[0]}.json`; a.click();
-        }
-
-        window.handleImport = (input) => {
-            const file = input.files[0];
-            if(!file) return;
+        // --- GLOBALE FUNKSJONER ---
+        window.saveWorkerName = function() { const val = document.getElementById('worker-name-input').value.trim(); if(val) { state.settings.workerName = val; saveData(); } };
+        window.updateSettings = function() { state.settings.hourlyRate = parseNum(document.getElementById('set-hourly-rate').value); saveData(); };
+        
+        window.handleImport = function(fileInput) { 
+            const file = fileInput.files[0]; if(!file) return;
             const r = new FileReader();
             r.onload = (e) => {
                 try {
-                    const content = e.target.result;
-                    const parsed = JSON.parse(content);
-                    
-                    let impHourlyRate = parsed.settings?.hourlyRate || parsed.hourlyRate || state.settings.hourlyRate;
-                    let impAccumSurplus = parseNum(parsed.accumulatedSurplus || parsed.historicalTotalSurplus || 0);
-                    let impAccumHours = parseNum(parsed.accumulatedHours || 0);
-                    let impAccumAkkord = parseNum(parsed.accumulatedAkkordTotal || 0);
-                    let impHistory = parsed.history || [];
-                    let impCurrentHours = parseNum(parsed.currentPeriod?.hours || parsed.totalHours || 0);
-                    let impCurrentLog = parsed.currentPeriod?.log || [];
-                    
-                    let discoveredArticles = parsed.articleLib || [];
-
-                    if (parsed.items && Array.isArray(parsed.items)) {
-                        let legacyLogForMonterat = [];
-                        let legacyHistoryAkkord = 0;
-
-                        parsed.items.forEach(old => {
-                             const p = parseNum(old.price || old.rate);
-                             const qCurr = parseNum(old.totalQuantity || old.qty || 0);
-                             const qHist = p > 0 ? (parseNum(old.historicalTotalSum || old.total || 0) / p) : 0;
-                             const name = (old.article || old.name || "Okjent").trim();
-                             if (!name) return;
-
-                             const stdName = getStandardName(name);
-
-                             if(!discoveredArticles.find(a => a.name === stdName)) {
-                                 discoveredArticles.push({ id: "id_" + Date.now() + "_" + Math.random(), name: stdName, price: p, unit: stdName.toLowerCase().includes("beslagskledning") ? "m²" : "m" });
-                             }
-                             if (qCurr > 0) {
-                                 impCurrentLog.push({
-                                     id: "id_" + Date.now() + "_" + Math.random(), name: stdName, price: p, qty: qCurr,
-                                     unit: stdName.toLowerCase().includes('beslagskledning') ? 'm²' : (stdName.toLowerCase().includes("endelukk") ? "st" : "m"),
-                                     total: p * qCurr
-                                 });
-                             }
-                             if (qHist > 0) {
-                                 legacyLogForMonterat.push({
-                                     name: stdName, price: p, qty: qHist,
-                                     unit: stdName.toLowerCase().includes("beslagskledning") ? "m²" : "m", 
-                                     total: p * qHist
-                                 });
-                                 legacyHistoryAkkord += (p * qHist);
-                             }
-                        });
-
-                        if (legacyLogForMonterat.length > 0 || impAccumSurplus > 0) {
-                            impHistory.push({
-                                date: new Date().toISOString(),
-                                month: "Prosjektstart (Import)",
-                                result: impAccumSurplus || (legacyHistoryAkkord - (impAccumHours * impHourlyRate)),
-                                hours: impAccumHours,
-                                akkordSum: legacyHistoryAkkord,
-                                log: legacyLogForMonterat,
-                                isSnapshot: false
-                            });
-                            impAccumSurplus = 0; impAccumHours = 0; impAccumAkkord = 0;
-                        }
-                    }
-
-                    const scanForArticles = (list) => {
-                        list.forEach(i => {
-                            const std = getStandardName(i.name);
-                            if (i.name && !discoveredArticles.find(a => a.name.toLowerCase() === std.toLowerCase())) {
-                                discoveredArticles.push({ id: "id_" + Date.now() + "_" + Math.random(), name: std, price: i.price, unit: i.unit || 'm' });
-                            }
-                        });
-                    };
-                    scanForArticles(impCurrentLog);
-                    impHistory.forEach(h => { if(h.log) scanForArticles(h.log); });
-
-                    state.settings.hourlyRate = impHourlyRate;
-                    state.history = impHistory;
-                    state.currentPeriod.log = impCurrentLog;
-                    state.currentPeriod.hours = impCurrentHours;
-                    state.accumulatedSurplus = impAccumSurplus;
-                    state.accumulatedHours = impAccumHours;
-                    state.accumulatedAkkordTotal = impAccumAkkord;
-                    state.articleLib = discoveredArticles;
-
-                    sanitizeState();
-                    document.getElementById('article-select').innerHTML = "";
-                    saveData();
-                    customAlert("Import lyckades!");
-                } catch(err) { 
-                    console.error(err);
-                    customAlert("Import misslyckades."); 
-                }
+                    const p = JSON.parse(e.target.result);
+                    if(p.settings) state.settings = Object.assign(state.settings, p.settings);
+                    if(p.articleLib) state.articleLib = p.articleLib;
+                    if(p.currentPeriod) state.currentPeriod = p.currentPeriod;
+                    if(p.history) state.history = p.history;
+                    if(p.accumulatedSurplus !== undefined) state.accumulatedSurplus = parseNum(p.accumulatedSurplus);
+                    if(p.accumulatedHours !== undefined) state.accumulatedHours = parseNum(p.accumulatedHours);
+                    if(p.accumulatedAkkordTotal !== undefined) state.accumulatedAkkordTotal = parseNum(p.accumulatedAkkordTotal);
+                    sanitizeState(); saveData(); renderUI(); customAlert("Import vellykket!");
+                } catch(err) { customAlert("Import feilet."); }
             };
             r.readAsText(file);
         };
 
-        window.resetAll = () => { customConfirm("Slette ALT?", () => { localStorage.removeItem(DB_KEY); location.reload(); }); };
-        window.currentConfirmCallback = null;
-        
-        function customAlert(msg) { document.getElementById('alert-msg').innerText = msg; document.getElementById('alert-modal').classList.add('active'); }
-        
-        function customConfirm(msg, callback) {
-            document.getElementById('confirm-msg').innerText = msg;
-            const yesBtn = document.getElementById('confirm-yes-btn');
-            yesBtn.onclick = () => {
-                document.getElementById('confirm-modal').classList.remove('active');
-                callback();
-            };
-            document.getElementById('confirm-modal').classList.add('active');
-        }
-        
-        window.closeConfirm = function() { document.getElementById('confirm-modal').classList.remove('active'); }
 
-        function parseNum(v) { 
-            if(v === undefined || v === null || isNaN(v)) return 0;
-            if(typeof v === 'string') return parseFloat(v.replace(',', '.')) || 0; 
-            return parseFloat(v) || 0; 
+        function loadData() { try { const raw = localStorage.getItem(DB_KEY); if(raw) { const parsed = JSON.parse(raw); state = Object.assign({}, state, parsed); } state.settings.cloudUrl = KONSTANT_URL; } catch(e) { console.error(e); } }
+        function saveData() { localStorage.setItem(DB_KEY, JSON.stringify(state)); renderUI(); }
+        
+        function sanitizeState() { 
+            state.settings.hourlyRate = parseNum(state.settings.hourlyRate); 
+            if(!state.currentPeriod.hourLog) state.currentPeriod.hourLog = []; 
+            if(!state.currentPeriod.month) state.currentPeriod.month = MONTHS[new Date().getMonth()];
+            if(state.articleLib) { state.articleLib.forEach((art, index) => { art.row = index + 1; }); } 
         }
-        function fmtMoney(n) { return new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK', maximumFractionDigits: 0 }).format(n); }
-        function fmtNum(n) { return new Intl.NumberFormat('nb-NO', { maximumFractionDigits: 2 }).format(n); }
+
+
+        window.openMonthPicker = () => {
+            const listEl = document.getElementById('month-list');
+            listEl.innerHTML = '';
+            MONTHS.forEach(m => {
+                const isActive = state.currentPeriod.month === m;
+                const btn = document.createElement('button');
+                btn.className = `p-3 rounded-xl font-bold text-[10px] uppercase border ${isActive ? 'bg-orange-600 border-orange-400 text-white' : 'bg-slate-900 border-slate-700 text-gray-400'}`;
+                btn.innerText = m;
+                btn.onclick = () => { state.currentPeriod.month = m; document.getElementById('month-picker-modal').classList.remove('active'); saveData(); };
+                listEl.appendChild(btn);
+            });
+            document.getElementById('month-picker-modal').classList.add('active');
+        };
+        
+        function renderUI() {
+            const safeSet = (id, val, isMoney = false, isNum = false) => { const el = document.getElementById(id); if (el) { if (isMoney) el.innerText = fmtMoney(parseNum(val)); else if (isNum) el.innerText = fmtNum(parseNum(val)); else el.innerText = val; } };
+            const nIn = document.getElementById('name-input-container'); const nDisp = document.getElementById('name-display-container'); const lockN = document.getElementById('locked-worker-name');
+            if(state.settings.workerName) { nIn.classList.add('hidden'); nDisp.classList.remove('hidden'); lockN.innerText = state.settings.workerName; } else { nIn.classList.remove('hidden'); nDisp.classList.add('hidden'); }
+            
+            let cHours = 0; let wHours = 0; const now = new Date(); const day = now.getDay(); const diff = now.getDate() - (day === 0 ? 6 : day - 1); const wStart = new Date(now.getFullYear(), now.getMonth(), diff, 0, 0, 0, 0).getTime();
+            state.currentPeriod.hourLog.forEach(e => { const q = parseNum(e.qty); cHours += q; if (e.timestamp >= wStart) wHours += q; });
+            
+            const activeMonth = state.currentPeriod.month;
+            const monthLabel = document.getElementById('disp-active-month');
+            if(monthLabel) monthLabel.innerText = activeMonth;
+
+
+            // GLOBAL STATISTIK (HELA PROJEKTET)
+            let projTotalAckord = 0; 
+            state.currentPeriod.log.forEach(i => { projTotalAckord += (parseNum(i.qty) * parseNum(i.price)); });
+            let projTotalHours = cHours;
+            if(state.history) { 
+                state.history.forEach(h => { 
+                    if (!h.isSnapshot) { 
+                        projTotalAckord += parseNum(h.akkordSum || 0); 
+                        projTotalHours += parseNum(h.hours || 0); 
+                    } 
+                }); 
+            }
+            projTotalAckord += parseNum(state.accumulatedAkkordTotal);
+            projTotalHours += parseNum(state.accumulatedHours);
+            const totalSalaryPaid = projTotalHours * parseNum(state.settings.hourlyRate);
+            const totalProjectResult = projTotalAckord - totalSalaryPaid + parseNum(state.accumulatedSurplus);
+
+
+            safeSet('period-label', activeMonth); 
+            safeSet('disp-period-hours', cHours, false, true); 
+            safeSet('disp-week-hours', wHours, false, true); 
+            safeSet('disp-curr-salary', cHours * parseNum(state.settings.hourlyRate), true); 
+            
+            safeSet('disp-proj-akkord', projTotalAckord, true); 
+            safeSet('disp-proj-result', totalProjectResult, true); 
+            safeSet('disp-proj-hours', projTotalHours, false, true);
+            const hAvg = projTotalHours > 0 ? (totalProjectResult / projTotalHours) : 0; 
+            safeSet('disp-proj-hourly', fmtMoney(hAvg) + "/h");
+
+
+            const select = document.getElementById('article-select');
+            if (select) { 
+                const curV = select.value; 
+                select.innerHTML = '<option value="">-- Velg Artikkel --</option>'; 
+                if(state.articleLib) state.articleLib.forEach((art, index) => { 
+                    const opt = document.createElement('option'); 
+                    opt.value = art.id; 
+                    opt.text = `${art.row || index + 1}. ${art.name} (${art.price} kr/${art.unit || 'st'})`; 
+                    select.appendChild(opt); 
+                }); 
+                if(curV) select.value = curV; 
+            }
+            
+            const list = document.getElementById('log-list');
+            if(list) {
+                list.innerHTML = '';
+                const sortedLog = [...state.currentPeriod.log].sort((a, b) => {
+                    const idxA = state.articleLib.findIndex(art => art.name === a.name);
+                    const idxB = state.articleLib.findIndex(art => art.name === b.name);
+                    return idxA - idxB;
+                });
+                sortedLog.forEach((item) => {
+                    const libIdx = state.articleLib.findIndex(art => art.name === item.name);
+                    const div = document.createElement('div'); div.className = 'bg-slate-900 p-4 rounded-2xl border border-slate-800 mb-2 w-full shadow-inner';
+                    div.innerHTML = `<div class="flex justify-between items-start mb-2"><div class="text-white font-black text-sm"><span class="text-blue-500 mr-1 font-mono">${libIdx !== -1 ? state.articleLib[libIdx].row : '?'}.</span> ${item.name} ${item.syncedAt ? '✓' : ''}</div><div class="text-blue-400 font-mono font-black text-sm">${fmtMoney(parseNum(item.qty) * parseNum(item.price))}</div></div><div class="flex justify-between items-center"><div class="text-[10px] text-gray-500 font-bold uppercase">${fmtNum(item.qty)} ${item.unit || 'st'}</div><div class="flex gap-2"><button onclick="window.editEntry('${item.id}')" class="text-[9px] text-blue-300 font-black">Endre</button><button onclick="window.removeEntry('${item.id}')" class="text-[9px] text-red-900 font-black uppercase">Slett</button></div></div>`;
+                    list.appendChild(div);
+                });
+            }
+        }
+
+
+        window.addAndSyncNow = async function() {
+            const artId = document.getElementById('article-select').value;
+            const qty = parseNum(document.getElementById('article-qty').value);
+            
+            if(artId && qty !== 0) {
+                const art = state.articleLib.find(a => a.id == artId);
+                state.currentPeriod.log.push({ id: "id_" + Date.now() + "_" + Math.floor(Math.random()*1000), name: art.name, price: art.price, qty: qty, unit: art.unit || 'st', total: art.price * qty, createdAt: Date.now(), syncedAt: null });
+                document.getElementById('article-qty').value = '';
+                saveData();
+            }
+            await syncToCloudNow();
+        };
+
+
+        window.syncFullPeriodToCloud = function() {
+            const unsyncedMat = state.currentPeriod.log.filter(e => !e.syncedAt).length;
+            const unsyncedHrs = state.currentPeriod.hourLog.filter(h => !h.syncedAt).length;
+
+
+            if (unsyncedMat === 0 && unsyncedHrs === 0) {
+                customAlert("Alt i valgt periode (" + state.currentPeriod.month + ") er allerede syncet.");
+                return;
+            }
+
+
+            customConfirm("OBS! Dette sender ALL data for " + state.currentPeriod.month + " til Master-loggen. Vil du fortsette?", () => {
+                syncToCloudNow();
+            });
+        };
+
+
+        window.onArticleSelect = () => { const id = document.getElementById('article-select').value; const art = state.articleLib.find(a => a.id == id); const priceEl = document.getElementById('disp-price'); if (priceEl) priceEl.innerText = art ? `${art.price} / ${art.unit || 'st'}` : "-"; if(art) document.getElementById('article-qty').focus(); };
+        window.addHours = () => { const i = document.getElementById('hours-input'); const v = parseNum(i.value); if(v > 0) { state.currentPeriod.hourLog.push({ id: "h_"+Date.now(), qty: v, timestamp: Date.now(), syncedAt: null }); i.value = ''; saveData(); } };
+        window.subtractHours = () => { const i = document.getElementById('hours-input'); const v = parseNum(i.value); if(v > 0) { state.currentPeriod.hourLog.push({ id: "h_"+Date.now(), qty: -v, timestamp: Date.now(), syncedAt: null }); i.value = ''; saveData(); } };
+        window.showHourLog = () => { const lEl = document.getElementById('hour-log-list'); lEl.innerHTML = ''; [...state.currentPeriod.hourLog].reverse().forEach(h => { const div = document.createElement('div'); div.className = 'flex justify-between items-center p-3 bg-slate-900 rounded-xl border border-slate-700 mb-2 shadow-inner'; div.innerHTML = `<div class="flex-1 text-white font-black text-sm">${h.qty > 0 ? '+' : ''}${h.qty} h ${h.syncedAt ? '✓' : ''}</div><button onclick="window.removeHourEntry('${h.id}')" class="text-red-900 p-2 text-xl">🗑️</button>`; lEl.appendChild(div); }); document.getElementById('hour-log-modal').classList.add('active'); };
+        window.removeHourEntry = (id) => { customConfirm("Slett timer?", () => { state.currentPeriod.hourLog = state.currentPeriod.hourLog.filter(h => String(h.id) !== String(id)); saveData(); window.showHourLog(); }); };
+        window.removeEntry = (id) => { customConfirm("Slett?", () => { state.currentPeriod.log = state.currentPeriod.log.filter(i => String(i.id) !== String(id)); saveData(); }); };
+        window.editEntry = (id) => { const e = state.currentPeriod.log.find(i => String(i.id) === String(id)); if(!e) return; const m = document.getElementById('edit-entry-modal'); document.getElementById('edit-subtitle').innerText = e.name; const inp = document.getElementById('edit-qty-input'); inp.value = e.qty; document.getElementById('edit-save-btn').onclick = () => { const q = parseNum(inp.value); if(q >= 0) { e.qty = q; e.total = q * e.price; e.syncedAt = null; m.classList.remove('active'); saveData(); } }; m.classList.add('active'); };
+
+
+        async function syncToCloudNow() {
+            const n = state.settings.workerName; const u = state.settings.cloudUrl; if(!n || !u) { customAlert("Angi navn først!"); return; }
+            const btn = document.getElementById('main-sync-btn'); 
+            const unsyncedHoursEntries = state.currentPeriod.hourLog.filter(h => !h.syncedAt);
+            const totalHoursToSync = unsyncedHoursEntries.reduce((s, h) => s + parseNum(h.qty), 0);
+            const unsyncedMatEntries = state.currentPeriod.log.filter(e => !e.syncedAt);
+            if(Math.abs(totalHoursToSync) < 0.001 && unsyncedMatEntries.length === 0) { return; }
+            btn.disabled = true; btn.classList.add('sync-active'); btn.innerText = "SENDER...";
+            const payload = { worker: n, timestamp: new Date().toLocaleString(), month: state.currentPeriod.month, hours: Number(totalHoursToSync), entries: unsyncedMatEntries.map((e) => { const libIdx = state.articleLib.findIndex(a => a.name === e.name); return { name: e.name, qty: Number(e.qty), unit: e.unit || 'st', targetRow: (libIdx !== -1 ? state.articleLib[libIdx].row : 0), originalTime: new Date(e.createdAt || Date.now()).toLocaleString() }; }) };
+            try { 
+                await fetch(u, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) }); 
+                const syncTs = Date.now();
+                state.currentPeriod.log.forEach(e => { if(!e.syncedAt) e.syncedAt = syncTs; });
+                state.currentPeriod.hourLog.forEach(h => { if(!h.syncedAt) h.syncedAt = syncTs; });
+                btn.innerHTML = '<span class="text-lg uppercase tracking-widest">✓ REGISTRERT</span>';
+                setTimeout(() => { btn.disabled = false; btn.innerHTML = '<span class="text-lg uppercase tracking-widest">Registrer Materiale</span>'; btn.classList.remove('sync-active'); }, 2500); saveData();
+            } catch (e) { btn.disabled = false; btn.classList.remove('sync-active'); btn.innerHTML = '<span class="text-lg uppercase tracking-widest">FEIL - PRØV IGJEN</span>'; }
+        }
+
+
+        window.showMonterat = () => {
+            const el = document.getElementById('monterat-list'); el.innerHTML = ''; let sum = {}; 
+            if(state.currentPeriod.log) state.currentPeriod.log.forEach(i => { if(!sum[i.name]) sum[i.name] = { qty: 0, unit: i.unit || 'st' }; sum[i.name].qty += parseNum(i.qty); });
+            if(state.history) state.history.forEach(h => { if(!h.isSnapshot && h.log) h.log.forEach(i => { if(!sum[i.name]) sum[i.name] = { qty: 0, unit: i.unit || 'st' }; sum[i.name].qty += parseNum(i.qty); }); });
+            let hasItems = false;
+            if(state.articleLib) state.articleLib.forEach((art, index) => { 
+                if(sum[art.name] && sum[art.name].qty > 0) { hasItems = true; const d = document.createElement('div'); d.className = 'flex justify-between items-center p-4 bg-slate-900 rounded-2xl border border-slate-700 mb-2 shadow-inner'; d.innerHTML = `<div class="font-black text-white text-xs flex-1"><span class="text-blue-500 mr-1 font-mono">${art.row || index+1}.</span> ${art.name}</div><div class="text-blue-400 font-black text-lg font-mono">${fmtNum(sum[art.name].qty)} <small class="text-gray-500 uppercase text-[10px] ml-1">${sum[art.name].unit}</small></div>`; el.appendChild(d); } 
+            });
+            if(!hasItems) el.innerHTML = '<p class="text-center py-10 opacity-50 italic uppercase text-[10px] tracking-widest">Ingenting montert ennå.</p>';
+            document.getElementById('monterat-modal').classList.add('active');
+        };
+
+
+        window.showHistory = () => {
+            const c = document.getElementById('history-content'); const summaryEl = document.getElementById('history-stats-summary');
+            if(!state.history || state.history.length === 0) { summaryEl.innerHTML = ''; c.innerHTML = '<p class="text-center text-gray-500 py-10 uppercase text-[10px]">Ingen historikk</p>'; } else {
+                let totalH = 0; let totalV = 0; state.history.forEach(h => { if(!h.isSnapshot) { totalH += parseNum(h.hours); totalV += parseNum(h.result); } });
+                const globalAvg = totalH > 0 ? (totalV / totalH) : 0;
+                summaryEl.innerHTML = `<div class="bg-blue-600/10 border border-blue-500 rounded-2xl p-4 text-center"><p class="text-[9px] text-blue-400 font-black uppercase tracking-widest mb-1">Historisk Akkordsnitt</p><p class="text-2xl font-black text-sweden-yellow">${fmtMoney(globalAvg)}/h</p></div>`;
+                c.innerHTML = state.history.map((h, i) => {
+                    const res = parseNum(h.result); const hAvg = h.hours > 0 ? (res / h.hours) : 0;
+                    const logDetails = (h.log && h.log.length > 0) ? h.log.map(item => `<div class="flex justify-between text-[10px] border-b border-slate-700/50 py-1"><span class="text-gray-300">${item.name}</span><span class="font-mono text-blue-400">${fmtNum(item.qty)} ${item.unit || 'st'}</span></div>`).join('') : '<p class="text-[9px] text-gray-600 italic tracking-tighter uppercase">Ingen materialedata.</p>';
+                    return `<div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 mb-3 shadow-lg"><div class="flex justify-between items-start mb-2"><div><span class="text-[10px] text-blue-400 font-black uppercase tracking-widest">${h.month}</span><p class="text-[8px] text-gray-600">${h.date ? h.date.split('T')[0] : ''}</p></div><button onclick="window.deleteHistoryEntry(${i})" class="text-red-900 bg-slate-900/50 p-2 rounded-lg text-xs active:scale-90 transition-transform">🗑️</button></div><div class="grid grid-cols-2 gap-2 mb-3"><div class="bg-slate-900/50 p-2 rounded-xl border border-slate-700"><p class="text-[8px] text-gray-500 uppercase font-black">Gevinst</p><p class="text-sm font-black ${res>=0?'text-green-400':'text-red-400'}">${fmtMoney(res)}</p></div><div class="bg-slate-900/50 p-2 rounded-xl border border-slate-700"><p class="text-[8px] text-gray-500 uppercase font-black">Periodesnitt</p><p class="text-sm font-black text-sweden-yellow">${fmtMoney(hAvg)}/h</p></div></div><details class="group bg-slate-900/50 rounded-xl overflow-hidden"><summary class="list-none p-2 text-center text-[9px] text-gray-500 uppercase font-bold cursor-pointer group-open:bg-slate-700/30 transition-colors">Vis Spesifikasjon ▾</summary><div class="p-3 bg-slate-950/30">${logDetails}</div></details></div>`;
+                }).reverse().join('');
+            }
+            document.getElementById('history-modal').classList.add('active');
+        };
+
+
+        window.startNewPeriod = () => { customConfirm("Vil du lukke måneden?", () => {
+                let cHours = state.currentPeriod.hourLog.reduce((s, h) => s + parseNum(h.qty), 0);
+                let cAckord = state.currentPeriod.log.reduce((s, i) => s + (parseNum(i.qty) * parseNum(i.price)), 0);
+                let cSalary = cHours * parseNum(state.settings.hourlyRate);
+                let cResult = cAckord - cSalary;
+                state.history.push({ date: new Date().toISOString(), month: state.currentPeriod.month, hours: cHours, akkordSum: cAckord, result: cResult, log: [...state.currentPeriod.log], hourLog: [...state.currentPeriod.hourLog], isSnapshot: false });
+                let currentMonthIndex = MONTHS.indexOf(state.currentPeriod.month);
+                let nextMonth = MONTHS[(currentMonthIndex === -1 ? 0 : currentMonthIndex + 1) % 12]; 
+                state.currentPeriod = { month: nextMonth, hours: 0, hourLog: [], log: [], syncedHours: 0 };
+                saveData(); customAlert("Måneden ble lukket!");
+            });
+        };
+
+
+        window.saveSnapshot = () => { customConfirm("Lagre Snapshot?", () => {
+                let cHours = state.currentPeriod.hourLog.reduce((s, h) => s + parseNum(h.qty), 0);
+                let cAckord = state.currentPeriod.log.reduce((s, i) => s + (parseNum(i.qty) * parseNum(i.price)), 0);
+                let cSalary = cHours * parseNum(state.settings.hourlyRate);
+                let cResult = cAckord - cSalary;
+                state.history.push({ date: new Date().toISOString(), month: state.currentPeriod.month + " (Snapshot)", hours: cHours, akkordSum: cAckord, result: cResult, log: [...state.currentPeriod.log], hourLog: [...state.currentPeriod.hourLog], isSnapshot: true });
+                saveData(); customAlert("Snapshot lagret!");
+            });
+        };
+
+
+        window.showArticleManager = () => {
+            const list = document.getElementById('article-db-list'); list.innerHTML = '';
+            state.articleLib.forEach((art, i) => {
+                const d = document.createElement('div'); d.className = 'flex justify-between items-center p-3 border-b border-slate-700/50';
+                d.innerHTML = `<div class="text-white text-sm font-bold">${art.name} <span class="text-gray-500 font-mono text-xs">(${art.price} kr/${art.unit||'st'})</span></div><button onclick="window.deleteArticle(${i})" class="text-red-500 font-black p-2 active:scale-90">X</button>`;
+                list.appendChild(d);
+            });
+            document.getElementById('article-modal').classList.add('active');
+        };
+
+
+        window.saveNewArticle = () => {
+            const name = document.getElementById('new-art-name').value.trim(); const price = parseNum(document.getElementById('new-art-price').value); const unit = document.getElementById('new-art-unit').value;
+            if(!name) return; state.articleLib.push({ id: 'art_'+Date.now(), name, price, unit, row: state.articleLib.length+1 });
+            document.getElementById('new-art-name').value = ''; document.getElementById('new-art-price').value = ''; saveData(); window.showArticleManager();
+        };
+
+
+        window.deleteArticle = (index) => { customConfirm("Slett artikkel?", () => { state.articleLib.splice(index, 1); saveData(); window.showArticleManager(); }); };
+        window.deleteHistoryEntry = (index) => { customConfirm("Slett historikk?", () => { state.history.splice(index, 1); saveData(); window.showHistory(); }); };
+        window.exportJson = () => { const b = new Blob([JSON.stringify(state)], {type: 'application/json'}); const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href = u; a.download = `TJ_Backup_${new Date().toISOString().split('T')[0]}.json`; a.click(); }
+        window.showSettings = () => { document.getElementById('set-hourly-rate').value = state.settings.hourlyRate; document.getElementById('settings-modal').classList.add('active'); };
+        window.resetAll = () => { customConfirm("Nullstill ALL lokal data?", () => { localStorage.removeItem(DB_KEY); location.reload(); }); };
+        function checkCloudConnection() { const icon = document.getElementById('cloud-status-icon'); if(KONSTANT_URL) { icon.innerText = "☁️ OK"; icon.style.opacity = "1"; icon.classList.add('sweden-yellow'); } }
+        
+        window.onload = () => {
+            loadData(); sanitizeState(); renderUI(); checkCloudConnection();
+            const imp = document.getElementById('import-input');
+            if(imp) {
+                imp.addEventListener('change', function() {
+                    const file = this.files[0]; if(!file) return;
+                    const r = new FileReader();
+                    r.onload = (e) => {
+                        try {
+                            const p = JSON.parse(e.target.result);
+                            if(p.settings) state.settings = Object.assign(state.settings, p.settings);
+                            if(p.articleLib) state.articleLib = p.articleLib;
+                            if(p.currentPeriod) state.currentPeriod = p.currentPeriod;
+                            if(p.history) state.history = p.history;
+                            if(p.accumulatedSurplus !== undefined) state.accumulatedSurplus = parseNum(p.accumulatedSurplus);
+                            if(p.accumulatedHours !== undefined) state.accumulatedHours = parseNum(p.accumulatedHours);
+                            if(p.accumulatedAkkordTotal !== undefined) state.accumulatedAkkordTotal = parseNum(p.accumulatedAkkordTotal);
+                            sanitizeState(); saveData(); renderUI(); customAlert("Import vellykket!");
+                        } catch(err) { customAlert("Import feilet."); }
+                    };
+                    r.readAsText(file);
+                });
+            }
+        };
     </script>
 </body>
 </html>
